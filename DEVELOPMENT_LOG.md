@@ -296,3 +296,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-17 10:42:02]** clean: minor adjustment to row height inside detail grid
 * **[2026-01-01 12:06:29]** chore: docs: update Vietnamese translation notes
 * **[2026-01-01 17:42:17]** clean: adjust right panel wrap lengths dynamically
+* **[2026-01-01 14:08:59]** perf: adjust right panel wrap lengths dynamically
