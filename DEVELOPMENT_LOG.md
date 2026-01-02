@@ -97,3 +97,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-01-01 12:00:05]** docs: minor UI polish and alignment check
 * **[2026-01-01 17:32:01]** docs: verify active Excel process recycling in background
 * **[2026-01-02 09:17:19]** refactor: optimize check performance on bulk spreadsheet sets
+* **[2026-01-02 17:13:53]** docs: tweak main window responsive minsize
