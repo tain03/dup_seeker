@@ -301,3 +301,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-01-03 12:26:55]** refactor: test: verify recursive folder parsing for massive sets
 * **[2026-01-03 17:30:40]** refactor: verify xlsx zip structure integrity check
 * **[2026-01-03 10:21:14]** chore: tweak drop zone background visual feedback
+* **[2026-01-03 09:34:37]** style: docs: add setup tips for win32com client dispatching
