@@ -303,3 +303,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-01-03 10:21:14]** chore: tweak drop zone background visual feedback
 * **[2026-01-03 09:34:37]** style: docs: add setup tips for win32com client dispatching
 * **[2026-01-04 14:27:10]** style: refine layout padding and border radius settings
+* **[2026-01-05 12:35:48]** refactor: tweak drop zone background visual feedback
