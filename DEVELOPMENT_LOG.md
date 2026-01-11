@@ -110,3 +110,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-01-09 15:49:01]** docs: minor UI polish and alignment check
 * **[2026-01-10 12:47:04]** fix: update inline comments for win32com integration
 * **[2026-01-10 10:13:37]** docs: update development readme Vietnamese edition notes
+* **[2026-01-11 11:50:05]** fix: prune redundant debug variables
