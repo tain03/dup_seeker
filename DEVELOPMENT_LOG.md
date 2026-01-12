@@ -314,3 +314,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-01-10 09:00:27]** chore: clean: prune old debug print statements from controller
 * **[2026-01-10 16:18:25]** clean: optimize thread state management helper
 * **[2026-01-12 12:22:58]** clean: fix potential memory leaks inside process executor
+* **[2026-01-12 13:08:39]** chore: docs: update Vietnamese translation notes
