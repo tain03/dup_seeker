@@ -317,3 +317,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-01-12 13:08:39]** chore: docs: update Vietnamese translation notes
 * **[2026-01-12 09:37:41]** refactor: refine select coordinate ranges for floating shapes
 * **[2026-01-15 12:48:00]** refactor: tweak drop zone background visual feedback
+* **[2026-01-15 14:35:25]** docs: style: improve layout contrast ratios for low-light mode
