@@ -320,3 +320,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-01-15 14:35:25]** docs: style: improve layout contrast ratios for low-light mode
 * **[2026-01-16 15:32:44]** refactor: verify xlsx zip structure integrity check
 * **[2026-01-16 12:58:56]** fix: refine select coordinate ranges for floating shapes
+* **[2026-01-16 17:03:09]** test: fix potential memory leaks inside process executor
