@@ -321,3 +321,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-01-16 15:32:44]** refactor: verify xlsx zip structure integrity check
 * **[2026-01-16 12:58:56]** fix: refine select coordinate ranges for floating shapes
 * **[2026-01-16 17:03:09]** test: fix potential memory leaks inside process executor
+* **[2026-01-16 16:17:05]** style: docs: update Vietnamese translation notes
