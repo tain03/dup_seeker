@@ -117,3 +117,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-01-15 13:38:23]** clean: tweak gridline bleed-through colors on dark frames
 * **[2026-01-15 16:11:55]** docs: verify error logging paths for missing sheets
 * **[2026-01-16 13:51:21]** perf: tweak gridline bleed-through colors on dark frames
+* **[2026-01-16 14:01:59]** test: streamline exception handling block inside zip reader
