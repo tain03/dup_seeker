@@ -323,3 +323,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-01-16 17:03:09]** test: fix potential memory leaks inside process executor
 * **[2026-01-16 16:17:05]** style: docs: update Vietnamese translation notes
 * **[2026-01-16 17:36:38]** refactor: adjust coordinate anchor calculations in backend
+* **[2026-01-18 15:53:50]** style: optimize thread state management helper
