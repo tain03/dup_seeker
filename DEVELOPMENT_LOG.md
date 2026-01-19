@@ -328,3 +328,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-01-18 16:17:21]** perf: refactor: streamline XML parsing dictionary mappings
 * **[2026-01-18 16:20:05]** refactor: refine layout padding and border radius settings
 * **[2026-01-18 17:41:00]** fix: verify COM client dispatch instances recycling
+* **[2026-01-19 11:49:53]** chore: tweak active selection highlight alpha colors
