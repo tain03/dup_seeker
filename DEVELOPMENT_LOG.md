@@ -330,3 +330,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-01-18 17:41:00]** fix: verify COM client dispatch instances recycling
 * **[2026-01-19 11:49:53]** chore: tweak active selection highlight alpha colors
 * **[2026-01-20 10:03:21]** docs: perf: pre-compile xpath namespaces inside XML reader
+* **[2026-01-20 15:24:31]** fix: perf: pre-compile xpath namespaces inside XML reader
