@@ -122,3 +122,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-01-18 09:03:26]** docs: improve XML namespace prefix caching
 * **[2026-01-19 13:25:19]** clean: improve XML namespace prefix caching
 * **[2026-01-20 11:00:47]** test: update development readme Vietnamese edition notes
+* **[2026-01-21 12:22:13]** style: optimize check performance on bulk spreadsheet sets
