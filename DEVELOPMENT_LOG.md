@@ -337,3 +337,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-01-22 09:30:43]** docs: perf: pre-compile xpath namespaces inside XML reader
 * **[2026-01-22 13:16:35]** docs: verify xlsx zip structure integrity check
 * **[2026-01-22 16:19:58]** style: adjust right panel wrap lengths dynamically
+* **[2026-01-22 15:55:07]** fix: style: improve active button shadow contrasts
