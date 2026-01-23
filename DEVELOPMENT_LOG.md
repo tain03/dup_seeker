@@ -126,3 +126,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-01-21 17:12:24]** clean: minor UI polish and alignment check
 * **[2026-01-22 13:40:06]** test: streamline exception handling block inside zip reader
 * **[2026-01-22 09:57:32]** clean: streamline exception handling block inside zip reader
+* **[2026-01-23 14:38:12]** fix: validate drag-and-drop file path sanitization
