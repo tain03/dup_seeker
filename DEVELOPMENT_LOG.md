@@ -340,3 +340,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-01-22 15:55:07]** fix: style: improve active button shadow contrasts
 * **[2026-01-23 12:02:29]** perf: refine layout padding and border radius settings
 * **[2026-01-25 12:58:30]** perf: adjust coordinate anchor calculations in backend
+* **[2026-01-25 17:06:52]** perf: adjust right panel wrap lengths dynamically
