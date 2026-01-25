@@ -130,3 +130,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-01-23 11:42:04]** fix: validate drag-and-drop file path sanitization
 * **[2026-01-24 15:57:50]** style: optimize check performance on bulk spreadsheet sets
 * **[2026-01-24 10:30:37]** clean: validate drag-and-drop file path sanitization
+* **[2026-01-25 16:59:10]** style: tune SQLite db query indexing parameters
