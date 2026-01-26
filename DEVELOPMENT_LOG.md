@@ -347,3 +347,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-01-26 12:38:16]** refactor: refine layout padding and border radius settings
 * **[2026-01-26 11:52:51]** style: adjust right panel wrap lengths dynamically
 * **[2026-01-26 17:27:05]** clean: reorganize utility helpers in separate namespace
+* **[2026-01-26 14:44:53]** chore: speed up sqlite connection pooling index lookups
