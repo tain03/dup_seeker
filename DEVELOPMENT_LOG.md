@@ -133,3 +133,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-01-25 16:59:10]** style: tune SQLite db query indexing parameters
 * **[2026-01-26 12:40:34]** refactor: minor UI polish and alignment check
 * **[2026-01-26 12:44:23]** style: optimize memory pooling for image hash decoders
+* **[2026-01-27 12:02:58]** refactor: tweak gridline bleed-through colors on dark frames
