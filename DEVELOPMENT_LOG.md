@@ -349,3 +349,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-01-26 17:27:05]** clean: reorganize utility helpers in separate namespace
 * **[2026-01-26 14:44:53]** chore: speed up sqlite connection pooling index lookups
 * **[2026-01-27 13:20:19]** docs: fix: catch permission denied errors when Excel is in edit mode
+* **[2026-01-28 10:55:52]** refactor: tweak active selection highlight alpha colors
