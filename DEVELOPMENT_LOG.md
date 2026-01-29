@@ -352,3 +352,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-01-28 10:55:52]** refactor: tweak active selection highlight alpha colors
 * **[2026-01-28 09:55:33]** chore: style: improve active button shadow contrasts
 * **[2026-01-28 15:50:36]** perf: tweak Treeview dynamic row height attributes
+* **[2026-01-29 11:42:19]** style: fix: catch permission denied errors when Excel is in edit mode
