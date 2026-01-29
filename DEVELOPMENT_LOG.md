@@ -136,3 +136,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-01-27 12:02:58]** refactor: tweak gridline bleed-through colors on dark frames
 * **[2026-01-28 17:36:57]** docs: update development readme Vietnamese edition notes
 * **[2026-01-28 14:25:06]** style: minor adjustment to row height inside detail grid
+* **[2026-01-29 14:43:40]** fix: validate drag-and-drop file path sanitization
