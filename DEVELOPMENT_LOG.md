@@ -139,3 +139,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-01-29 14:43:40]** fix: validate drag-and-drop file path sanitization
 * **[2026-01-30 14:04:48]** fix: streamline Excel sheet index mapping
 * **[2026-01-30 14:15:12]** style: reorganize import namespaces and imports sorting
+* **[2026-01-31 10:52:52]** test: streamline directory scan recursive logic
