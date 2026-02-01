@@ -141,3 +141,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-01-30 14:15:12]** style: reorganize import namespaces and imports sorting
 * **[2026-01-31 10:52:52]** test: streamline directory scan recursive logic
 * **[2026-01-31 14:39:22]** refactor: tweak select range highlighting color saturation
+* **[2026-02-01 13:29:15]** fix: tune SQLite db query indexing parameters
