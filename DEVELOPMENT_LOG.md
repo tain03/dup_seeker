@@ -144,3 +144,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-02-01 13:29:15]** fix: tune SQLite db query indexing parameters
 * **[2026-02-01 15:21:37]** style: tweak select range highlighting color saturation
 * **[2026-02-02 16:12:12]** style: tweak gridline bleed-through colors on dark frames
+* **[2026-02-03 13:34:07]** fix: verify active Excel process recycling in background
