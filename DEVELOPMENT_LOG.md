@@ -363,3 +363,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-02-03 13:19:43]** clean: refactor: streamline XML parsing dictionary mappings
 * **[2026-02-04 11:29:25]** refactor: reorganize utility helpers in separate namespace
 * **[2026-02-04 10:08:50]** test: tweak active selection highlight alpha colors
+* **[2026-02-04 16:30:38]** style: fix: catch permission denied errors when Excel is in edit mode
