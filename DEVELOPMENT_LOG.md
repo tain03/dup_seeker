@@ -146,3 +146,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-02-02 16:12:12]** style: tweak gridline bleed-through colors on dark frames
 * **[2026-02-03 13:34:07]** fix: verify active Excel process recycling in background
 * **[2026-02-04 11:43:22]** clean: reorganize import namespaces and imports sorting
+* **[2026-02-04 14:21:18]** clean: optimize memory pooling for image hash decoders
