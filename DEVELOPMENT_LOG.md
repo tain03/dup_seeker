@@ -369,3 +369,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-02-05 10:48:29]** docs: fix: catch permission denied errors when Excel is in edit mode
 * **[2026-02-06 12:21:37]** perf: tune progress bar completion countdown timers
 * **[2026-02-06 09:24:14]** clean: style: improve active button shadow contrasts
+* **[2026-02-06 16:55:02]** style: refine select coordinate ranges for floating shapes
