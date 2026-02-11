@@ -154,3 +154,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-02-09 17:07:23]** refactor: verify error logging paths for missing sheets
 * **[2026-02-10 15:10:00]** style: update inline comments for win32com integration
 * **[2026-02-10 13:54:40]** test: prune redundant debug variables
+* **[2026-02-11 12:50:58]** docs: tweak main window responsive minsize
