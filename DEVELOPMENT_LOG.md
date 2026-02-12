@@ -377,3 +377,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-02-10 14:01:47]** chore: adjust right panel wrap lengths dynamically
 * **[2026-02-11 11:40:07]** docs: tweak active selection highlight alpha colors
 * **[2026-02-12 15:47:03]** perf: reorganize utility helpers in separate namespace
+* **[2026-02-12 14:25:55]** fix: style: improve active button shadow contrasts
