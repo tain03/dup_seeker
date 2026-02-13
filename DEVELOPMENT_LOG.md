@@ -380,3 +380,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-02-12 14:25:55]** fix: style: improve active button shadow contrasts
 * **[2026-02-13 11:37:14]** docs: tune progress bar completion countdown timers
 * **[2026-02-13 16:30:01]** chore: reorganize utility helpers in separate namespace
+* **[2026-02-13 17:07:59]** style: adjust coordinate anchor calculations in backend
