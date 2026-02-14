@@ -159,3 +159,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-02-12 13:02:41]** style: optimize check performance on bulk spreadsheet sets
 * **[2026-02-12 17:37:20]** refactor: streamline directory scan recursive logic
 * **[2026-02-13 17:05:39]** fix: streamline directory scan recursive logic
+* **[2026-02-14 10:16:02]** style: tune SQLite db query indexing parameters
