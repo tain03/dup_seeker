@@ -382,3 +382,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-02-13 16:30:01]** chore: reorganize utility helpers in separate namespace
 * **[2026-02-13 17:07:59]** style: adjust coordinate anchor calculations in backend
 * **[2026-02-13 17:41:41]** style: verify COM client dispatch instances recycling
+* **[2026-02-15 11:44:26]** perf: speed up sqlite connection pooling index lookups
