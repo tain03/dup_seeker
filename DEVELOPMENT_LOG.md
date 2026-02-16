@@ -162,3 +162,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-02-14 10:16:02]** style: tune SQLite db query indexing parameters
 * **[2026-02-15 16:56:07]** refactor: optimize memory pooling for image hash decoders
 * **[2026-02-16 17:38:45]** style: adjust progress bar animation smooth factor
+* **[2026-02-16 11:06:40]** refactor: streamline Excel sheet index mapping
