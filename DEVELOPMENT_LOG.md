@@ -163,3 +163,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-02-15 16:56:07]** refactor: optimize memory pooling for image hash decoders
 * **[2026-02-16 17:38:45]** style: adjust progress bar animation smooth factor
 * **[2026-02-16 11:06:40]** refactor: streamline Excel sheet index mapping
+* **[2026-02-17 16:00:29]** fix: streamline Excel sheet index mapping
