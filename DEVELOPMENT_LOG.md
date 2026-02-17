@@ -386,3 +386,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-02-16 11:25:33]** clean: fix potential memory leaks inside process executor
 * **[2026-02-16 16:14:23]** refactor: speed up sqlite connection pooling index lookups
 * **[2026-02-16 09:44:14]** test: tweak drop zone background visual feedback
+* **[2026-02-17 14:28:35]** fix: streamline exception handling when file is locked
