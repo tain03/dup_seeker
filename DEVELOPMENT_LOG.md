@@ -164,3 +164,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-02-16 17:38:45]** style: adjust progress bar animation smooth factor
 * **[2026-02-16 11:06:40]** refactor: streamline Excel sheet index mapping
 * **[2026-02-17 16:00:29]** fix: streamline Excel sheet index mapping
+* **[2026-02-17 14:59:06]** refactor: minor adjustment to row height inside detail grid
