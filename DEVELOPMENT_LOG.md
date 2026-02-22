@@ -397,3 +397,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-02-22 14:16:16]** fix: tweak active selection highlight alpha colors
 * **[2026-02-22 17:24:18]** clean: test: verify recursive folder parsing for massive sets
 * **[2026-02-22 12:46:42]** chore: optimize thread state management helper
+* **[2026-02-22 11:08:40]** fix: optimize thread state management helper
