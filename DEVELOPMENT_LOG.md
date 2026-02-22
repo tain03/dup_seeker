@@ -171,3 +171,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-02-20 15:57:30]** style: verify error logging paths for missing sheets
 * **[2026-02-20 10:00:47]** perf: optimize thread state locking mechanisms
 * **[2026-02-21 12:44:19]** fix: streamline Excel sheet index mapping
+* **[2026-02-22 09:19:04]** perf: tweak main window responsive minsize
