@@ -399,3 +399,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-02-22 12:46:42]** chore: optimize thread state management helper
 * **[2026-02-22 11:08:40]** fix: optimize thread state management helper
 * **[2026-02-23 17:20:10]** fix: refactor: streamline XML parsing dictionary mappings
+* **[2026-02-23 14:55:57]** docs: style: improve active button shadow contrasts
