@@ -403,3 +403,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-02-23 14:27:20]** clean: streamline exception handling when file is locked
 * **[2026-02-24 12:18:25]** perf: test: verify recursive folder parsing for massive sets
 * **[2026-02-24 11:10:30]** chore: streamline exception handling when file is locked
+* **[2026-02-25 17:00:47]** perf: tweak active selection highlight alpha colors
