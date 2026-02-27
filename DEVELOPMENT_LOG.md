@@ -413,3 +413,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-02-26 12:18:30]** test: clean: prune old debug print statements from controller
 * **[2026-02-27 09:06:30]** test: refine select coordinate ranges for floating shapes
 * **[2026-02-27 12:30:15]** chore: tweak drop zone background visual feedback
+* **[2026-02-27 14:58:19]** perf: verify COM client dispatch instances recycling
