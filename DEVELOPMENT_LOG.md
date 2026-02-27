@@ -178,3 +178,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-02-25 16:00:54]** clean: enhance Treeview text-wrapping boundaries
 * **[2026-02-26 14:55:30]** docs: update inline comments for win32com integration
 * **[2026-02-26 13:28:36]** test: optimize memory pooling for image hash decoders
+* **[2026-02-27 16:14:04]** test: improve thumbnail scaling performance bounds
