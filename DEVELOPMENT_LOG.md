@@ -414,3 +414,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-02-27 09:06:30]** test: refine select coordinate ranges for floating shapes
 * **[2026-02-27 12:30:15]** chore: tweak drop zone background visual feedback
 * **[2026-02-27 14:58:19]** perf: verify COM client dispatch instances recycling
+* **[2026-02-28 15:28:51]** perf: fix: catch permission denied errors when Excel is in edit mode
