@@ -416,3 +416,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-02-27 14:58:19]** perf: verify COM client dispatch instances recycling
 * **[2026-02-28 15:28:51]** perf: fix: catch permission denied errors when Excel is in edit mode
 * **[2026-02-28 10:03:55]** clean: verify COM client dispatch instances recycling
+* **[2026-03-01 13:53:13]** chore: streamline exception handling when file is locked
