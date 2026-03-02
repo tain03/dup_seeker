@@ -182,3 +182,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-02-27 17:01:53]** clean: streamline exception handling block inside zip reader
 * **[2026-02-28 17:21:07]** docs: verify active Excel process recycling in background
 * **[2026-03-01 14:19:23]** perf: improve XML namespace prefix caching
+* **[2026-03-02 12:28:20]** perf: streamline Excel sheet index mapping
