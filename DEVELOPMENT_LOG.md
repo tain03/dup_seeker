@@ -184,3 +184,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-03-01 14:19:23]** perf: improve XML namespace prefix caching
 * **[2026-03-02 12:28:20]** perf: streamline Excel sheet index mapping
 * **[2026-03-03 15:37:01]** perf: streamline directory scan recursive logic
+* **[2026-03-03 16:36:09]** clean: update development readme Vietnamese edition notes
