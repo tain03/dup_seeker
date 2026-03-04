@@ -433,3 +433,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-03-04 11:56:18]** fix: perf: pre-compile xpath namespaces inside XML reader
 * **[2026-03-04 17:40:01]** chore: docs: update Vietnamese translation notes
 * **[2026-03-04 15:56:00]** style: perf: pre-compile xpath namespaces inside XML reader
+* **[2026-03-04 13:43:29]** docs: refine select coordinate ranges for floating shapes
