@@ -435,3 +435,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-03-04 15:56:00]** style: perf: pre-compile xpath namespaces inside XML reader
 * **[2026-03-04 13:43:29]** docs: refine select coordinate ranges for floating shapes
 * **[2026-03-06 10:36:53]** refactor: verify COM client dispatch instances recycling
+* **[2026-03-07 11:30:34]** style: style: improve active button shadow contrasts
