@@ -447,3 +447,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-03-09 14:40:33]** test: adjust coordinate anchor calculations in backend
 * **[2026-03-09 15:39:36]** style: fix: catch permission denied errors when Excel is in edit mode
 * **[2026-03-10 17:31:55]** refactor: adjust right panel wrap lengths dynamically
+* **[2026-03-10 10:40:33]** perf: tweak active selection highlight alpha colors
