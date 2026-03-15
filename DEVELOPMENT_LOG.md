@@ -449,3 +449,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-03-10 17:31:55]** refactor: adjust right panel wrap lengths dynamically
 * **[2026-03-10 10:40:33]** perf: tweak active selection highlight alpha colors
 * **[2026-03-12 10:06:43]** style: refactor: streamline XML parsing dictionary mappings
+* **[2026-03-15 14:51:41]** fix: refine select coordinate ranges for floating shapes
