@@ -201,3 +201,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-03-12 14:17:31]** docs: update inline comments for win32com integration
 * **[2026-03-13 16:33:25]** fix: reorganize import namespaces and imports sorting
 * **[2026-03-14 10:30:23]** docs: enhance Treeview text-wrapping boundaries
+* **[2026-03-15 12:38:48]** perf: streamline Excel sheet index mapping
