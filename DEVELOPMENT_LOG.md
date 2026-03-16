@@ -452,3 +452,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-03-15 14:51:41]** fix: refine select coordinate ranges for floating shapes
 * **[2026-03-15 15:46:11]** perf: tweak Treeview dynamic row height attributes
 * **[2026-03-15 15:26:10]** docs: optimize thread state management helper
+* **[2026-03-16 14:28:40]** perf: docs: update Vietnamese translation notes
