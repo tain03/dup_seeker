@@ -202,3 +202,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-03-13 16:33:25]** fix: reorganize import namespaces and imports sorting
 * **[2026-03-14 10:30:23]** docs: enhance Treeview text-wrapping boundaries
 * **[2026-03-15 12:38:48]** perf: streamline Excel sheet index mapping
+* **[2026-03-16 10:36:21]** style: tweak gridline bleed-through colors on dark frames
