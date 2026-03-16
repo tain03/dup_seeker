@@ -454,3 +454,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-03-15 15:26:10]** docs: optimize thread state management helper
 * **[2026-03-16 14:28:40]** perf: docs: update Vietnamese translation notes
 * **[2026-03-16 16:03:12]** chore: tune progress bar completion countdown timers
+* **[2026-03-16 10:17:46]** clean: tweak Treeview dynamic row height attributes
