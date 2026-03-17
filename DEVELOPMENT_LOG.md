@@ -460,3 +460,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-03-17 17:39:55]** test: tweak Treeview dynamic row height attributes
 * **[2026-03-17 09:03:35]** clean: adjust right panel wrap lengths dynamically
 * **[2026-03-17 09:56:44]** refactor: docs: update Vietnamese translation notes
+* **[2026-03-17 16:39:48]** test: verify xlsx zip structure integrity check
