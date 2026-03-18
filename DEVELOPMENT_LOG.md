@@ -463,3 +463,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-03-17 16:39:48]** test: verify xlsx zip structure integrity check
 * **[2026-03-17 09:44:39]** perf: clean: prune old debug print statements from controller
 * **[2026-03-18 17:51:27]** chore: adjust coordinate anchor calculations in backend
+* **[2026-03-18 11:44:27]** clean: style: improve layout contrast ratios for low-light mode
