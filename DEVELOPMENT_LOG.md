@@ -467,3 +467,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-03-19 11:11:27]** chore: tune progress bar completion countdown timers
 * **[2026-03-19 10:32:21]** test: refactor: streamline XML parsing dictionary mappings
 * **[2026-03-19 13:45:51]** perf: tweak drop zone background visual feedback
+* **[2026-03-19 14:24:10]** style: refine select coordinate ranges for floating shapes
