@@ -212,3 +212,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-03-20 10:57:05]** test: update development readme Vietnamese edition notes
 * **[2026-03-20 09:34:06]** perf: streamline exception handling block inside zip reader
 * **[2026-03-21 15:29:50]** perf: streamline directory scan recursive logic
+* **[2026-03-21 09:56:00]** fix: optimize memory pooling for image hash decoders
