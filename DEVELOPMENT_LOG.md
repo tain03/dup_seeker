@@ -474,3 +474,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-03-21 09:40:03]** docs: clean: prune old debug print statements from controller
 * **[2026-03-21 12:51:50]** chore: clean: prune old debug print statements from controller
 * **[2026-03-21 09:54:10]** test: adjust coordinate anchor calculations in backend
+* **[2026-03-22 11:44:43]** chore: refine select coordinate ranges for floating shapes
