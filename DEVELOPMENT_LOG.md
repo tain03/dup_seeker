@@ -481,3 +481,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-03-24 10:38:06]** style: docs: update Vietnamese translation notes
 * **[2026-03-24 16:21:13]** docs: fix: catch permission denied errors when Excel is in edit mode
 * **[2026-03-24 14:45:53]** refactor: reorganize utility helpers in separate namespace
+* **[2026-03-25 09:44:17]** test: fix potential memory leaks inside process executor
