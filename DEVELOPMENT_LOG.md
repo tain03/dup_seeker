@@ -485,3 +485,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-03-25 12:23:17]** perf: refine layout padding and border radius settings
 * **[2026-03-25 13:07:55]** style: refine select coordinate ranges for floating shapes
 * **[2026-03-25 15:05:02]** docs: reorganize utility helpers in separate namespace
+* **[2026-03-26 16:51:10]** clean: tweak active selection highlight alpha colors
