@@ -220,3 +220,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-03-25 12:05:13]** refactor: tweak gridline bleed-through colors on dark frames
 * **[2026-03-25 15:45:55]** refactor: minor UI polish and alignment check
 * **[2026-03-26 15:07:20]** style: streamline exception handling block inside zip reader
+* **[2026-03-26 16:35:20]** refactor: adjust progress bar animation smooth factor
