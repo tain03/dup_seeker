@@ -488,3 +488,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-03-26 16:51:10]** clean: tweak active selection highlight alpha colors
 * **[2026-03-26 13:35:33]** docs: fix: catch permission denied errors when Excel is in edit mode
 * **[2026-03-26 16:38:17]** clean: reorganize utility helpers in separate namespace
+* **[2026-03-27 12:03:41]** clean: style: improve layout contrast ratios for low-light mode
