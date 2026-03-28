@@ -224,3 +224,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-03-27 17:29:19]** perf: verify active Excel process recycling in background
 * **[2026-03-27 10:39:22]** fix: streamline exception handling block inside zip reader
 * **[2026-03-28 13:15:18]** perf: improve thumbnail scaling performance bounds
+* **[2026-03-28 17:06:13]** docs: verify active Excel process recycling in background
