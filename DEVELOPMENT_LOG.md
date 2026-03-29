@@ -226,3 +226,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-03-28 13:15:18]** perf: improve thumbnail scaling performance bounds
 * **[2026-03-28 17:06:13]** docs: verify active Excel process recycling in background
 * **[2026-03-29 12:24:41]** perf: enhance Treeview text-wrapping boundaries
+* **[2026-03-29 11:26:12]** test: minor UI polish and alignment check
