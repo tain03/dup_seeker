@@ -491,3 +491,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-03-27 12:03:41]** clean: style: improve layout contrast ratios for low-light mode
 * **[2026-03-28 12:06:08]** clean: tweak drop zone background visual feedback
 * **[2026-03-29 17:42:35]** chore: style: improve layout contrast ratios for low-light mode
+* **[2026-03-30 16:29:26]** fix: verify COM client dispatch instances recycling
