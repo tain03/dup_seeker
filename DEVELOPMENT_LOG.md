@@ -228,3 +228,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-03-29 12:24:41]** perf: enhance Treeview text-wrapping boundaries
 * **[2026-03-29 11:26:12]** test: minor UI polish and alignment check
 * **[2026-03-30 14:46:02]** docs: tweak select range highlighting color saturation
+* **[2026-03-31 13:27:43]** refactor: streamline directory scan recursive logic
