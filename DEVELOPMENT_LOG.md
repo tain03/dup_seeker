@@ -231,3 +231,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-03-31 13:27:43]** refactor: streamline directory scan recursive logic
 * **[2026-03-31 09:16:54]** style: adjust progress bar animation smooth factor
 * **[2026-04-01 16:14:14]** fix: verify active Excel process recycling in background
+* **[2026-04-01 10:15:11]** clean: tweak main window responsive minsize
