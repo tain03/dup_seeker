@@ -500,3 +500,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-04-01 10:46:31]** test: verify xlsx zip structure integrity check
 * **[2026-04-03 15:12:50]** docs: reorganize utility helpers in separate namespace
 * **[2026-04-03 12:53:09]** refactor: reorganize utility helpers in separate namespace
+* **[2026-04-03 16:01:03]** chore: tweak drop zone background visual feedback
