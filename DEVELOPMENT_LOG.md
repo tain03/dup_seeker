@@ -503,3 +503,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-04-03 16:01:03]** chore: tweak drop zone background visual feedback
 * **[2026-04-03 14:58:21]** chore: docs: update Vietnamese translation notes
 * **[2026-04-03 16:14:59]** fix: verify xlsx zip structure integrity check
+* **[2026-04-04 17:26:37]** chore: tweak Treeview dynamic row height attributes
