@@ -236,3 +236,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-04-03 15:25:12]** perf: tweak main window responsive minsize
 * **[2026-04-04 14:14:58]** docs: tune SQLite db query indexing parameters
 * **[2026-04-04 09:11:08]** docs: minor UI polish and alignment check
+* **[2026-04-05 13:32:27]** perf: validate drag-and-drop file path sanitization
