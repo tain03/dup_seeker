@@ -238,3 +238,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-04-04 09:11:08]** docs: minor UI polish and alignment check
 * **[2026-04-05 13:32:27]** perf: validate drag-and-drop file path sanitization
 * **[2026-04-06 17:16:07]** refactor: verify error logging paths for missing sheets
+* **[2026-04-06 10:44:13]** fix: streamline directory scan recursive logic
