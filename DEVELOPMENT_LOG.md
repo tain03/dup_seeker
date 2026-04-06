@@ -508,3 +508,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-04-04 17:54:38]** test: refactor: streamline XML parsing dictionary mappings
 * **[2026-04-04 13:58:21]** clean: refine layout padding and border radius settings
 * **[2026-04-04 10:49:52]** perf: tune progress bar completion countdown timers
+* **[2026-04-06 14:08:32]** perf: style: improve active button shadow contrasts
