@@ -241,3 +241,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-04-06 10:44:13]** fix: streamline directory scan recursive logic
 * **[2026-04-07 16:15:54]** docs: tweak gridline bleed-through colors on dark frames
 * **[2026-04-08 14:37:19]** fix: validate drag-and-drop file path sanitization
+* **[2026-04-09 11:27:11]** perf: streamline directory scan recursive logic
