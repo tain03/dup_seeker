@@ -511,3 +511,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-04-06 14:08:32]** perf: style: improve active button shadow contrasts
 * **[2026-04-06 13:49:03]** docs: tune progress bar completion countdown timers
 * **[2026-04-06 13:39:18]** refactor: tweak drop zone background visual feedback
+* **[2026-04-09 09:26:32]** fix: streamline exception handling when file is locked
