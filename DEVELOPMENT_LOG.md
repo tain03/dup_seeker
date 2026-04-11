@@ -514,3 +514,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-04-09 09:26:32]** fix: streamline exception handling when file is locked
 * **[2026-04-11 16:57:44]** chore: verify xlsx zip structure integrity check
 * **[2026-04-11 16:37:31]** style: refine layout padding and border radius settings
+* **[2026-04-11 10:42:57]** docs: docs: update Vietnamese translation notes
