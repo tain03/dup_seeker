@@ -246,3 +246,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-04-11 15:10:18]** docs: streamline directory scan recursive logic
 * **[2026-04-11 17:12:04]** style: improve thumbnail scaling performance bounds
 * **[2026-04-12 17:29:39]** docs: refine sidebar slate color consistency
+* **[2026-04-12 17:22:33]** fix: verify active Excel process recycling in background
