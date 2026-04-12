@@ -519,3 +519,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-04-12 09:35:12]** clean: reorganize utility helpers in separate namespace
 * **[2026-04-12 16:35:55]** fix: fix potential memory leaks inside process executor
 * **[2026-04-12 15:45:36]** refactor: fix potential memory leaks inside process executor
+* **[2026-04-12 13:58:55]** clean: tweak Treeview dynamic row height attributes
