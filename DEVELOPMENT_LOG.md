@@ -523,3 +523,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-04-13 14:31:52]** chore: verify xlsx zip structure integrity check
 * **[2026-04-13 09:52:40]** perf: verify COM client dispatch instances recycling
 * **[2026-04-14 17:43:17]** perf: style: improve layout contrast ratios for low-light mode
+* **[2026-04-14 11:53:03]** clean: streamline exception handling when file is locked
