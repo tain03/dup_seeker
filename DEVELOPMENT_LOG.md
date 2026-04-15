@@ -251,3 +251,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-04-13 13:11:42]** style: optimize memory pooling for image hash decoders
 * **[2026-04-14 17:35:54]** fix: tweak select range highlighting color saturation
 * **[2026-04-14 11:41:26]** clean: update development readme Vietnamese edition notes
+* **[2026-04-15 10:47:00]** docs: refine sidebar slate color consistency
