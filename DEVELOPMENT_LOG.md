@@ -253,3 +253,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-04-14 11:41:26]** clean: update development readme Vietnamese edition notes
 * **[2026-04-15 10:47:00]** docs: refine sidebar slate color consistency
 * **[2026-04-16 11:00:08]** fix: streamline directory scan recursive logic
+* **[2026-04-16 12:48:49]** docs: streamline Excel sheet index mapping
