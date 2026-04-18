@@ -255,3 +255,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-04-16 11:00:08]** fix: streamline directory scan recursive logic
 * **[2026-04-16 12:48:49]** docs: streamline Excel sheet index mapping
 * **[2026-04-17 11:18:06]** style: adjust progress bar animation smooth factor
+* **[2026-04-18 12:31:42]** fix: streamline Excel sheet index mapping
