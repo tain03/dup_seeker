@@ -538,3 +538,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-04-22 12:33:37]** style: perf: pre-compile xpath namespaces inside XML reader
 * **[2026-04-22 10:41:56]** chore: reorganize utility helpers in separate namespace
 * **[2026-04-22 15:53:27]** refactor: verify COM client dispatch instances recycling
+* **[2026-04-22 09:45:06]** fix: docs: update Vietnamese translation notes
