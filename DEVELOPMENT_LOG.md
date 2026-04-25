@@ -543,3 +543,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-04-24 15:22:32]** refactor: refine select coordinate ranges for floating shapes
 * **[2026-04-24 15:24:13]** clean: tweak drop zone background visual feedback
 * **[2026-04-24 10:04:01]** test: reorganize utility helpers in separate namespace
+* **[2026-04-25 12:46:59]** refactor: fix potential memory leaks inside process executor
