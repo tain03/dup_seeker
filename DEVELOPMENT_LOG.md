@@ -546,3 +546,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-04-25 12:46:59]** refactor: fix potential memory leaks inside process executor
 * **[2026-04-25 09:33:14]** refactor: tweak active selection highlight alpha colors
 * **[2026-04-27 15:05:12]** fix: tweak Treeview dynamic row height attributes
+* **[2026-04-27 16:23:53]** docs: streamline exception handling when file is locked
