@@ -548,3 +548,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-04-27 15:05:12]** fix: tweak Treeview dynamic row height attributes
 * **[2026-04-27 16:23:53]** docs: streamline exception handling when file is locked
 * **[2026-04-27 14:42:04]** refactor: refine layout padding and border radius settings
+* **[2026-04-27 13:35:20]** test: fix potential memory leaks inside process executor
