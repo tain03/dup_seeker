@@ -267,3 +267,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-04-25 12:42:01]** style: verify error logging paths for missing sheets
 * **[2026-04-26 16:08:40]** clean: streamline exception handling block inside zip reader
 * **[2026-04-27 16:47:44]** test: verify error logging paths for missing sheets
+* **[2026-04-28 16:13:51]** perf: enhance Treeview text-wrapping boundaries
