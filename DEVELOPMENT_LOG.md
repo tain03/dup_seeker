@@ -558,3 +558,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-04-30 16:34:24]** style: verify xlsx zip structure integrity check
 * **[2026-04-30 15:59:48]** test: tweak drop zone background visual feedback
 * **[2026-04-30 13:23:45]** docs: tune progress bar completion countdown timers
+* **[2026-04-30 09:33:40]** style: tweak active selection highlight alpha colors
