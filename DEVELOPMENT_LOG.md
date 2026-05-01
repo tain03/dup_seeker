@@ -560,3 +560,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-04-30 13:23:45]** docs: tune progress bar completion countdown timers
 * **[2026-04-30 09:33:40]** style: tweak active selection highlight alpha colors
 * **[2026-05-01 10:03:16]** test: streamline exception handling when file is locked
+* **[2026-05-01 10:58:21]** fix: docs: update Vietnamese translation notes
