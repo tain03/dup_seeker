@@ -10,3 +10,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-03 14:18:58]** style: add drop zone visual border feedback
 * **[2026-05-03 11:20:25]** fix: handle multiple excel instances cleanly
 * **[2026-05-04 18:07:09]** fix: resolve floating image anchor cell coordinates correctly
+* **[2026-05-04 11:22:00]** feat: implement pywin32 COM connection utility
