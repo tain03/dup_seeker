@@ -11,3 +11,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-03 11:20:25]** fix: handle multiple excel instances cleanly
 * **[2026-05-04 18:07:09]** fix: resolve floating image anchor cell coordinates correctly
 * **[2026-05-04 11:22:00]** feat: implement pywin32 COM connection utility
+* **[2026-05-04 15:48:09]** test: verify excel focus automation on locked sheets
