@@ -13,3 +13,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-04 11:22:00]** feat: implement pywin32 COM connection utility
 * **[2026-05-04 15:48:09]** test: verify excel focus automation on locked sheets
 * **[2026-05-04 16:43:54]** test: benchmark md5 hashing vs phash generation
+* **[2026-05-04 17:30:20]** fix: trim whitespaces in exclusion sheets input
