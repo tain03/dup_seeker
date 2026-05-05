@@ -21,3 +21,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-05 12:00:15]** fix: close SQLite connection safely on worker exit
 * **[2026-05-05 10:09:58]** feat: integrate Pillow for image format decoding
 * **[2026-05-05 12:44:21]** feat: create current_scan temporary table for bulk write
+* **[2026-05-05 11:06:18]** style: set cell content anchors to center for cell addresses
