@@ -569,3 +569,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-04 14:34:26]** test: style: improve active button shadow contrasts
 * **[2026-05-04 11:19:50]** style: refactor: streamline XML parsing dictionary mappings
 * **[2026-05-05 17:13:33]** fix: speed up sqlite connection pooling index lookups
+* **[2026-05-05 10:22:12]** style: docs: update Vietnamese translation notes
