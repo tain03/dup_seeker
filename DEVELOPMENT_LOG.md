@@ -276,3 +276,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-02 14:18:31]** style: optimize check performance on bulk spreadsheet sets
 * **[2026-05-03 12:38:54]** style: refine sidebar slate color consistency
 * **[2026-05-04 13:19:34]** docs: optimize check performance on bulk spreadsheet sets
+* **[2026-05-05 11:42:42]** refactor: tune SQLite db query indexing parameters
