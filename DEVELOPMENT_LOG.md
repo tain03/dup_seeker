@@ -23,3 +23,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-05 12:44:21]** feat: create current_scan temporary table for bulk write
 * **[2026-05-05 11:06:18]** style: set cell content anchors to center for cell addresses
 * **[2026-05-05 17:15:32]** fix: clear old tree nodes upon new audit trigger
+* **[2026-05-05 17:28:05]** perf: reuse SQL connection statement pool
