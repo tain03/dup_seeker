@@ -17,3 +17,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-04 18:48:56]** feat: add main layout split frame design
 * **[2026-05-04 16:06:19]** feat: implement drag and drop wrapper using tkinterdnd2
 * **[2026-05-05 16:11:59]** style: customize sidebar panel backgrounds
+* **[2026-05-05 18:34:48]** feat: implement base ZIP reader for excel workbook
