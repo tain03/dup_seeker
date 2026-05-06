@@ -27,3 +27,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-05 18:55:23]** feat: add tkinterdnd2 DLL paths to binaries array in spec
 * **[2026-05-06 17:57:04]** feat: parse worksheet relation files for drawing targets
 * **[2026-05-06 13:54:58]** fix: fix file path parsing for drop paths on Windows
+* **[2026-05-06 14:15:34]** test: add unit test for multi-sheet drawing parsers
