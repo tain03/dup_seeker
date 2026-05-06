@@ -570,3 +570,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-04 11:19:50]** style: refactor: streamline XML parsing dictionary mappings
 * **[2026-05-05 17:13:33]** fix: speed up sqlite connection pooling index lookups
 * **[2026-05-05 10:22:12]** style: docs: update Vietnamese translation notes
+* **[2026-05-06 11:23:27]** fix: streamline exception handling when file is locked
