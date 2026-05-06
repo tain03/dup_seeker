@@ -28,3 +28,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-06 17:57:04]** feat: parse worksheet relation files for drawing targets
 * **[2026-05-06 13:54:58]** fix: fix file path parsing for drop paths on Windows
 * **[2026-05-06 14:15:34]** test: add unit test for multi-sheet drawing parsers
+* **[2026-05-06 15:04:45]** feat: integrate imagehash for perceptual hashing
