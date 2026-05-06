@@ -25,3 +25,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-05 17:15:32]** fix: clear old tree nodes upon new audit trigger
 * **[2026-05-05 17:28:05]** perf: reuse SQL connection statement pool
 * **[2026-05-05 18:55:23]** feat: add tkinterdnd2 DLL paths to binaries array in spec
+* **[2026-05-06 17:57:04]** feat: parse worksheet relation files for drawing targets
