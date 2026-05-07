@@ -34,3 +34,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-07 10:44:44]** fix: release excel COM objects safely to avoid zombie processes
 * **[2026-05-07 09:19:31]** docs: split Vietnamese version to README_VN.md with flags
 * **[2026-05-07 17:08:14]** refactor: minor code cleanup and optimization pass #91
+* **[2026-05-07 16:11:54]** docs: document design system and color tokens
