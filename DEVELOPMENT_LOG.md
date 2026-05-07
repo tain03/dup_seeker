@@ -577,3 +577,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-07 11:33:46]** perf: perf: pre-compile xpath namespaces inside XML reader
 * **[2026-05-07 11:29:58]** style: refine layout padding and border radius settings
 * **[2026-05-07 14:49:21]** refactor: clean: prune old debug print statements from controller
+* **[2026-05-07 11:44:55]** fix: docs: add setup tips for win32com client dispatching
