@@ -37,3 +37,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-07 16:11:54]** docs: document design system and color tokens
 * **[2026-05-07 10:31:42]** feat: integrate scrollbar command to treeview
 * **[2026-05-07 09:35:39]** feat: calculate raw image MD5 checksum
+* **[2026-05-07 10:40:32]** feat: parse drawing XML anchors for image cell coordinates
