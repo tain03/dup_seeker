@@ -31,3 +31,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-06 15:04:45]** feat: integrate imagehash for perceptual hashing
 * **[2026-05-06 10:45:35]** refactor: abstract color definitions to config structure
 * **[2026-05-07 18:24:50]** fix: handle file-not-found fallback to os.startfile
+* **[2026-05-07 10:44:44]** fix: release excel COM objects safely to avoid zombie processes
