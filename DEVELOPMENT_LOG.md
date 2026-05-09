@@ -282,3 +282,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-07 12:27:34]** refactor: reorganize import namespaces and imports sorting
 * **[2026-05-08 17:35:24]** clean: verify active Excel process recycling in background
 * **[2026-05-08 09:25:10]** clean: tweak main window responsive minsize
+* **[2026-05-09 10:44:34]** perf: verify error logging paths for missing sheets
