@@ -44,3 +44,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-08 17:35:19]** refactor: minor code cleanup and optimization pass #88
 * **[2026-05-08 15:12:16]** feat: create initial pyinstaller DUP-SEEKER spec
 * **[2026-05-09 16:34:51]** feat: implement target workbook activation via COM
+* **[2026-05-09 09:44:34]** refactor: streamline exception handling inside ZIP reader
