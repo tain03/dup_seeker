@@ -51,3 +51,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-10 14:13:26]** refactor: unify coordinate calculations inside helper
 * **[2026-05-10 14:48:19]** perf: add multi-threading to speed up image hash processing
 * **[2026-05-10 09:51:47]** docs: restructure README as dual-language English/Vietnamese
+* **[2026-05-10 18:07:16]** feat: active correct sheet containing duplicates
