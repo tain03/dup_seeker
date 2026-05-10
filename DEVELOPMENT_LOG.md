@@ -580,3 +580,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-07 11:44:55]** fix: docs: add setup tips for win32com client dispatching
 * **[2026-05-09 17:54:55]** fix: verify COM client dispatch instances recycling
 * **[2026-05-09 15:09:10]** clean: docs: update Vietnamese translation notes
+* **[2026-05-10 13:25:50]** test: speed up sqlite connection pooling index lookups
