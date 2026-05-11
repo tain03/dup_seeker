@@ -61,3 +61,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-11 17:18:25]** feat: build folder selector with recursive file search
 * **[2026-05-11 17:42:46]** perf: implement index columns on md5 and phash in SQLite
 * **[2026-05-11 09:45:38]** refactor: optimize pHash vision calculations
+* **[2026-05-11 18:15:15]** feat: parse xl/workbook.xml to extract worksheet names
