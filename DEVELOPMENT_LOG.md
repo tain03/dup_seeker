@@ -60,3 +60,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-11 13:50:38]** fix: handle hidden or empty sheet states safely
 * **[2026-05-11 17:18:25]** feat: build folder selector with recursive file search
 * **[2026-05-11 17:42:46]** perf: implement index columns on md5 and phash in SQLite
+* **[2026-05-11 09:45:38]** refactor: optimize pHash vision calculations
