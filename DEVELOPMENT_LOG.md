@@ -58,3 +58,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-10 13:21:58]** feat: initialize CustomTkinter application window
 * **[2026-05-10 15:58:06]** perf: enable UPX compression for executable output
 * **[2026-05-11 13:50:38]** fix: handle hidden or empty sheet states safely
+* **[2026-05-11 17:18:25]** feat: build folder selector with recursive file search
