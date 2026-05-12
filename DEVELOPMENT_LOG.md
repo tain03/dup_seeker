@@ -581,3 +581,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-09 17:54:55]** fix: verify COM client dispatch instances recycling
 * **[2026-05-09 15:09:10]** clean: docs: update Vietnamese translation notes
 * **[2026-05-10 13:25:50]** test: speed up sqlite connection pooling index lookups
+* **[2026-05-12 09:54:40]** perf: refine layout padding and border radius settings
