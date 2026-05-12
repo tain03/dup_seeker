@@ -66,3 +66,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-12 15:02:11]** feat: create hash_cache permanent table
 * **[2026-05-12 11:43:19]** style: configure custom blue background for parent rows
 * **[2026-05-12 17:02:11]** clean: prune build directories and clean spec workspace
+* **[2026-05-12 11:40:57]** feat: select and focus exact cell coordinate via range select
