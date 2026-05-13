@@ -73,3 +73,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-13 10:42:28]** fix: resolve potential NoneType exception in path resolving
 * **[2026-05-13 11:00:01]** fix: catch permission denied errors when excel is open
 * **[2026-05-13 14:26:33]** feat: add customtkinter assets copy to spec
+* **[2026-05-13 18:37:03]** fix: fix CustomTkinter startup shrink bug using 150ms delay
