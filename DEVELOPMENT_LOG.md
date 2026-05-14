@@ -77,3 +77,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-14 11:55:39]** fix: handle corrupted image streams gracefully
 * **[2026-05-14 13:12:40]** clean: remove redundant temporary prints
 * **[2026-05-14 14:18:38]** feat: add exclusion sheets field to search filters
+* **[2026-05-14 11:35:51]** style: add flat gridlines using cell border bleed-through
