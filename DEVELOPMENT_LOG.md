@@ -584,3 +584,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-12 09:54:40]** perf: refine layout padding and border radius settings
 * **[2026-05-13 16:36:35]** style: test: verify recursive folder parsing for massive sets
 * **[2026-05-14 15:52:33]** perf: tweak Treeview dynamic row height attributes
+* **[2026-05-14 15:04:48]** clean: adjust coordinate anchor calculations in backend
