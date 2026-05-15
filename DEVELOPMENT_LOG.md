@@ -79,3 +79,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-14 14:18:38]** feat: add exclusion sheets field to search filters
 * **[2026-05-14 11:35:51]** style: add flat gridlines using cell border bleed-through
 * **[2026-05-14 09:05:55]** docs: write comprehensive README.md file
+* **[2026-05-15 18:24:58]** style: refine progress label alignment in sidebar
