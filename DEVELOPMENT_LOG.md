@@ -82,3 +82,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-15 18:24:58]** style: refine progress label alignment in sidebar
 * **[2026-05-15 17:08:46]** refactor: utilize bulk insert to optimize database throughput
 * **[2026-05-15 17:43:33]** refactor: clean up simulated vertical bars in tree list
+* **[2026-05-15 14:08:49]** docs: write release notes for v2.1-Final
