@@ -12,6 +12,8 @@ import customtkinter as ctk
 from PIL import Image
 import io
 from tkinterdnd2 import DND_FILES, TkinterDnD
+import imagehash
+import xlsxwriter
 
 # --- ELITE PREMIUM DESIGN SYSTEM ---
 COLORS = {
@@ -48,6 +50,19 @@ def get_cell_address(col, row):
     return f"{string}{row + 1}"
 
 class ExcelProcessor:
+    @staticmethod
+    def get_sheet_names(file_paths):
+        all_sheets = set()
+        for path in file_paths:
+            try:
+                with zipfile.ZipFile(path, 'r') as z:
+                    workbook_xml = z.read('xl/workbook.xml')
+                    root = ET.fromstring(workbook_xml)
+                    for s in root.findall('.//sh:sheet', NS):
+                        all_sheets.add(s.get('name'))
+            except: pass
+        return sorted(list(all_sheets))
+
     @staticmethod
     def extract_data(file_path, ignore_sheets=None):
         ignore_sheets = ignore_sheets or []
@@ -105,8 +120,12 @@ class ExcelProcessor:
                             m_path = drawing_to_media.get(r_id)
                             if m_path in z.namelist():
                                 data = z.read(m_path)
+                                # V2.0: Perceptual Hash for visual similarity
+                                pil_img = Image.open(io.BytesIO(data))
+                                p_hash = str(imagehash.phash(pil_img))
+                                
                                 results.append({
-                                    "hash": hashlib.md5(data).hexdigest(),
+                                    "hash": p_hash, 
                                     "file": Path(file_path).name,
                                     "full_path": str(file_path),
                                     "sheet": s_real_name,
@@ -127,12 +146,8 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
         # --- RESPONSIVE WINDOW SCALING ---
         screen_width = self.winfo_screenwidth()
         screen_height = self.winfo_screenheight()
-        
-        # Đặt kích thước mặc định phù hợp với cả laptop nhỏ
         width = min(1150, int(screen_width * 0.8))
         height = min(720, int(screen_height * 0.8))
-        
-        # Căn giữa màn hình
         x = (screen_width // 2) - (width // 2)
         y = (screen_height // 2) - (height // 2)
         self.geometry(f"{width}x{height}+{x}+{y}")
@@ -148,8 +163,9 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
 
         # State
         self.selected_files = []
-        self.ignore_sheets_str = tk.StringVar(value="Sheet1, Form_Mau")
+        self.ignore_sheets_str = tk.StringVar(value="Sheet1, Cosmetic, Critical Part")
         self.is_scanning = False
+        self.duplicates_cache = []
         
         # Grid Structure
         self.grid_columnconfigure(1, weight=1)
@@ -176,6 +192,15 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
                      font=ctk.CTkFont(size=24, weight="bold"), 
                      text_color=COLORS["primary"]).pack(side="left")
 
+        self.btn_guide = ctk.CTkButton(self.sidebar, text="HELP / HƯỚNG DẪN 💡", 
+                                       fg_color="transparent",
+                                       hover_color=COLORS["sidebar_accent"],
+                                       border_width=1, border_color=COLORS["sidebar_accent"],
+                                       font=ctk.CTkFont(size=12, weight="bold"),
+                                       height=40, corner_radius=10,
+                                       command=self.show_guide)
+        self.btn_guide.pack(pady=(0, 30), padx=30, fill="x")
+
         # Action Group
         group_lbl = ctk.CTkLabel(self.sidebar, text="MAIN ACTIONS", font=ctk.CTkFont(size=11, weight="bold"), text_color=COLORS["text_muted"])
         group_lbl.pack(anchor="w", padx=35, pady=(0, 10))
@@ -197,17 +222,38 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
         config_box.pack(pady=25, padx=25, fill="x")
         
         ctk.CTkLabel(config_box, text="EXCLUSION SETS", font=ctk.CTkFont(size=10, weight="bold"), text_color=COLORS["text_muted"]).pack(anchor="w", pady=(0,8))
-        self.entry_ignore = ctk.CTkEntry(config_box, textvariable=self.ignore_sheets_str,
+        
+        entry_f = ctk.CTkFrame(config_box, fg_color="transparent")
+        entry_f.pack(fill="x")
+        
+        self.entry_ignore = ctk.CTkEntry(entry_f, textvariable=self.ignore_sheets_str,
                                         fg_color=COLORS["sidebar_accent"], border_color=COLORS["sidebar_accent"],
                                         height=35, corner_radius=10, text_color=COLORS["white"])
-        self.entry_ignore.pack(fill="x")
+        self.entry_ignore.pack(side="left", fill="x", expand=True, padx=(0, 5))
+        
+        self.btn_browse_sheets = ctk.CTkButton(entry_f, text="🔍", width=35, height=35, 
+                                              fg_color=COLORS["sidebar_accent"], 
+                                              hover_color=COLORS["primary"],
+                                              command=self.show_sheet_selector)
+        self.btn_browse_sheets.pack(side="right")
 
-        # Bottom Actions (Reduced bottom padding)
+        # V2.0 Export Button
+        self.btn_export = ctk.CTkButton(self.sidebar, text="EXPORT REPORT (XLSX)", 
+                                       command=self.export_report, 
+                                       height=45, 
+                                       fg_color=COLORS["secondary"],
+                                       hover_color="#4F46E5",
+                                       font=ctk.CTkFont(size=13, weight="bold"),
+                                       corner_radius=12,
+                                       state="disabled")
+        self.btn_export.pack(pady=(20, 0), padx=30, fill="x")
+
+        # Run Button
         self.btn_scan = ctk.CTkButton(self.sidebar, text="EXECUTE AUDIT", 
                                      command=self.start_scan, 
                                      height=50, 
-                                     fg_color=COLORS["primary"],
-                                     hover_color=COLORS["primary_glow"],
+                                     fg_color=COLORS["success"],
+                                     hover_color="#047857",
                                      font=ctk.CTkFont(size=15, weight="bold"),
                                      corner_radius=12)
         self.btn_scan.pack(side="bottom", pady=30, padx=25, fill="x")
@@ -249,7 +295,7 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
         card = ctk.CTkFrame(parent, fg_color=COLORS["white"], corner_radius=16, border_width=1, border_color=COLORS["border"])
         card.grid(row=0, column=col, sticky="nsew", padx=10)
         
-        v_lbl = ctk.CTkLabel(card, text=val, font=ctk.CTkFont(size=32, weight="bold"), text_color=color or COLORS["text_dark"])
+        v_lbl = ctk.CTkLabel(card, text=val, font=ctk.CTkFont(size=28, weight="bold"), text_color=color or COLORS["text_dark"])
         v_lbl.pack(pady=(25, 0))
         ctk.CTkLabel(card, text=label, font=ctk.CTkFont(size=10, weight="bold"), text_color=COLORS["text_muted"]).pack(pady=(0,20))
         return v_lbl
@@ -276,6 +322,7 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
         if self.is_scanning or not self.selected_files: return
         self.is_scanning = True
         self.btn_scan.configure(state="disabled", text="ANALYZING SYSTEM...")
+        self.btn_export.configure(state="disabled")
         threading.Thread(target=self.scan_logic, daemon=True).start()
 
     def scan_logic(self):
@@ -290,6 +337,7 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
             db = defaultdict(list)
             for img in all_images: db[img['hash']].append(img)
             duplicates = [locs for h, locs in db.items() if len(locs) > 1]
+            self.duplicates_cache = duplicates
             self.after(0, lambda: self.render_results(duplicates, len(all_images)))
         except Exception as e:
             self.after(0, lambda e=e: messagebox.showerror("System Error", f"{e}"))
@@ -302,11 +350,11 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
         if not duplicates:
             ctk.CTkLabel(self.scroll_view, text="SYSTEM INTEGRITY VERIFIED", font=ctk.CTkFont(size=20, weight="bold"), text_color=COLORS["success"]).pack(pady=150)
         else:
+            self.btn_export.configure(state="normal")
             for i, group in enumerate(duplicates):
                 card = ctk.CTkFrame(self.scroll_view, fg_color=COLORS["white"], corner_radius=16, border_width=1, border_color=COLORS["border"])
                 card.pack(fill="x", pady=12, padx=5)
                 
-                # Accent Bar
                 accent = ctk.CTkFrame(card, width=6, fg_color=COLORS["danger"], corner_radius=0)
                 accent.place(relx=0, rely=0, relheight=1)
 
@@ -319,7 +367,7 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
                     img_lbl.grid(row=0, column=0, rowspan=len(group)+1, padx=(25, 20), pady=25)
                 except: pass
 
-                header = ctk.CTkLabel(card, text=f"DUPLICATE SET #{i+1}", font=ctk.CTkFont(size=14, weight="bold"), text_color=COLORS["danger"])
+                header = ctk.CTkLabel(card, text=f"DUPLICATE SET #{i+1} (Visual Match)", font=ctk.CTkFont(size=14, weight="bold"), text_color=COLORS["danger"])
                 header.grid(row=0, column=1, sticky="w", pady=(20,10))
 
                 for j, loc in enumerate(group):
@@ -336,10 +384,124 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
 
         self._reset_state()
 
+    def export_report(self):
+        if not self.duplicates_cache: return
+        file_path = filedialog.asksaveasfilename(defaultextension=".xlsx", filetypes=[("Excel files", "*.xlsx")], title="Save Audit Report")
+        if not file_path: return
+
+        try:
+            workbook = xlsxwriter.Workbook(file_path)
+            worksheet = workbook.add_worksheet("Audit Results")
+            
+            # Formats
+            header_fmt = workbook.add_format({'bold': True, 'bg_color': '#0F172A', 'font_color': 'white', 'border': 1, 'align': 'center'})
+            cell_fmt = workbook.add_format({'border': 1, 'align': 'center', 'valign': 'vcenter'})
+            group_fmt = workbook.add_format({'bold': True, 'bg_color': '#FEE2E2', 'font_color': '#991B1B', 'border': 1})
+
+            # Headers
+            headers = ["PREVIEW", "GROUP ID", "FILE NAME", "SHEET NAME", "CELL ADDRESS"]
+            for col, text in enumerate(headers):
+                worksheet.write(0, col, text, header_fmt)
+            
+            worksheet.set_column('A:A', 25) # Image column
+            worksheet.set_column('B:E', 25)
+
+            current_row = 1
+            for i, group in enumerate(self.duplicates_cache):
+                group_id = f"SET #{i+1}"
+                
+                # Write Image once per group
+                img_data = group[0]['img_data']
+                img_io = io.BytesIO(img_data)
+                
+                worksheet.set_row(current_row, 120) # Height for image
+                worksheet.insert_image(current_row, 0, f"img_{i}.png", {'image_data': img_io, 'x_scale': 0.2, 'y_scale': 0.2, 'x_offset': 5, 'y_offset': 5})
+                
+                for j, loc in enumerate(group):
+                    worksheet.write(current_row, 1, group_id, group_fmt if j==0 else cell_fmt)
+                    worksheet.write(current_row, 2, loc['file'], cell_fmt)
+                    worksheet.write(current_row, 3, loc['sheet'], cell_fmt)
+                    worksheet.write(current_row, 4, loc['cell'], cell_fmt)
+                    current_row += 1
+
+            workbook.close()
+            messagebox.showinfo("Success", f"Report exported successfully to:\n{file_path}")
+        except Exception as e:
+            messagebox.showerror("Export Error", f"Failed to export report: {e}")
+
     def _reset_state(self):
         self.is_scanning = False
         self.btn_scan.configure(state="normal", text="EXECUTE AUDIT")
         self.progress.set(0)
+
+    def show_guide(self):
+        guide_win = ctk.CTkToplevel(self)
+        guide_win.title("DUP-SEEKER USER GUIDE")
+        guide_win.geometry("600x550")
+        guide_win.configure(fg_color=COLORS["white"])
+        guide_win.after(100, lambda: guide_win.focus())
+        
+        scroll = ctk.CTkScrollableFrame(guide_win, fg_color="transparent")
+        scroll.pack(fill="both", expand=True, padx=20, pady=20)
+
+        # Vietnamese Section
+        ctk.CTkLabel(scroll, text="🇻🇳 HƯỚNG DẪN SỬ DỤNG", font=ctk.CTkFont(size=18, weight="bold"), text_color=COLORS["primary"]).pack(anchor="w", pady=(0,10))
+        vn_text = (
+            "1. CHỌN DỮ LIỆU: Nhấn 'SELECT DATA SOURCE' hoặc kéo thả các file Excel (.xlsx) trực tiếp vào ứng dụng.\n\n"
+            "2. LOẠI TRỪ SHEET: Nhấn biểu tượng 🔍 cạnh ô nhập liệu để hiện danh sách toàn bộ Sheet và tích chọn những Sheet mẫu cần bỏ qua.\n\n"
+            "3. THỰC HIỆN: Nhấn 'EXECUTE AUDIT'. Hệ thống sử dụng AI Vision (pHash) để phát hiện ảnh trùng kể cả khi đã bị resize hoặc nén.\n\n"
+            "4. KẾT QUẢ: Xem danh sách ảnh lỗi. Nhấn 'VIEW FILE' để mở tệp Excel gốc hoặc 'EXPORT REPORT' để lưu báo cáo tổng hợp có kèm ảnh xem trước."
+        )
+        ctk.CTkLabel(scroll, text=vn_text, font=ctk.CTkFont(size=13), justify="left", wraplength=520, text_color=COLORS["text_dark"]).pack(anchor="w", pady=(0,30))
+
+        # English Section
+        ctk.CTkLabel(scroll, text="🇺🇸 USER GUIDE", font=ctk.CTkFont(size=18, weight="bold"), text_color=COLORS["secondary"]).pack(anchor="w", pady=(0,10))
+        en_text = (
+            "1. SELECT DATA: Click 'SELECT DATA SOURCE' or drag and drop Excel files (.xlsx) into the app.\n\n"
+            "2. EXCLUDE SHEETS: Click the 🔍 icon to browse all sheet names and check the ones you want to skip.\n\n"
+            "3. EXECUTE: Click 'EXECUTE AUDIT'. The system uses AI Vision (pHash) to detect duplicates even if they are resized or compressed.\n\n"
+            "4. RESULTS: View issues. Click 'VIEW FILE' to open source Excel or 'EXPORT REPORT' to save a summary report with image previews."
+        )
+        ctk.CTkLabel(scroll, text=en_text, font=ctk.CTkFont(size=13), justify="left", wraplength=520, text_color=COLORS["text_dark"]).pack(anchor="w")
+
+        ctk.CTkButton(guide_win, text="CLOSE / ĐÓNG", command=guide_win.destroy, fg_color=COLORS["sidebar_primary"], corner_radius=10).pack(pady=20)
+
+    def show_sheet_selector(self):
+        if not self.selected_files:
+            messagebox.showwarning("Warning", "Vui lòng chọn file Excel trước / Please select Excel files first")
+            return
+            
+        sheets = ExcelProcessor.get_sheet_names(self.selected_files)
+        if not sheets: return
+
+        selector = ctk.CTkToplevel(self)
+        selector.title("SELECT SHEETS TO IGNORE")
+        selector.geometry("400x500")
+        selector.configure(fg_color=COLORS["white"])
+        selector.after(100, lambda: selector.focus())
+        
+        ctk.CTkLabel(selector, text="TÍCH CHỌN SHEET BỎ QUA", font=ctk.CTkFont(size=14, weight="bold"), text_color=COLORS["primary"]).pack(pady=15)
+        
+        scroll = ctk.CTkScrollableFrame(selector, fg_color="transparent")
+        scroll.pack(fill="both", expand=True, padx=20, pady=10)
+        
+        current_ignores = [s.strip() for s in self.ignore_sheets_str.get().split(",") if s.strip()]
+        checkboxes = {}
+        
+        for s in sheets:
+            var = tk.BooleanVar(value=s in current_ignores)
+            cb = ctk.CTkCheckBox(scroll, text=s, variable=var, font=ctk.CTkFont(size=12), 
+                                 fg_color=COLORS["primary"], hover_color=COLORS["primary_glow"])
+            cb.pack(anchor="w", pady=5)
+            checkboxes[s] = var
+            
+        def apply_selection():
+            selected = [s for s, v in checkboxes.items() if v.get()]
+            self.ignore_sheets_str.set(", ".join(selected))
+            selector.destroy()
+            
+        ctk.CTkButton(selector, text="APPLY / XÁC NHẬN", command=apply_selection, 
+                      fg_color=COLORS["primary"], corner_radius=10).pack(pady=20)
 
 if __name__ == "__main__":
     app = DuplicateApp()
