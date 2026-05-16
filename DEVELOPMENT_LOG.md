@@ -88,3 +88,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-16 09:29:39]** refactor: minor code cleanup and optimization pass #90
 * **[2026-05-16 14:23:44]** style: embed custom brand icon to compiled executable
 * **[2026-05-16 18:27:07]** perf: speed up process pool executor startup
+* **[2026-05-16 15:33:39]** style: unify typography font weights and slants
