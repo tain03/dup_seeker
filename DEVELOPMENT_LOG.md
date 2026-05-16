@@ -86,3 +86,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-15 14:40:40]** feat: initialize SQLite cache database wrapper
 * **[2026-05-15 12:34:25]** style: improve zebra striping contrasts
 * **[2026-05-16 09:29:39]** refactor: minor code cleanup and optimization pass #90
+* **[2026-05-16 14:23:44]** style: embed custom brand icon to compiled executable
