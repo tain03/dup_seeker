@@ -92,3 +92,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-16 09:50:48]** style: adjust preview thumbnail max bounds to 320px
 * **[2026-05-16 15:54:42]** feat: build hierarchical parent-child Treeview list
 * **[2026-05-16 12:02:48]** feat: add basic details side panel cards
+* **[2026-05-16 12:23:43]** refactor: optimize thread lock release blocks
