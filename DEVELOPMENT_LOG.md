@@ -90,3 +90,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-16 18:27:07]** perf: speed up process pool executor startup
 * **[2026-05-16 15:33:39]** style: unify typography font weights and slants
 * **[2026-05-16 09:50:48]** style: adjust preview thumbnail max bounds to 320px
+* **[2026-05-16 15:54:42]** feat: build hierarchical parent-child Treeview list
