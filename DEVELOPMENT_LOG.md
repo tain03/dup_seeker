@@ -293,3 +293,4 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-15 13:16:50]** clean: minor UI polish and alignment check
 * **[2026-05-16 17:03:06]** docs: enhance Treeview text-wrapping boundaries
 * **[2026-05-16 09:37:24]** fix: refine sidebar slate color consistency
+* **[2026-05-17 10:42:02]** clean: minor adjustment to row height inside detail grid
