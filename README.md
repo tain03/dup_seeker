@@ -1,99 +1,110 @@
 # 🚀 DUP-SEEKER: Premium Excel Image Integrity Suite
 
-**DUP-SEEKER** là một giải pháp Desktop cao cấp (Enterprise-Grade) được thiết kế để tự động hóa việc kiểm tra tính toàn vẹn của hình ảnh trong hàng loạt báo cáo Excel (.xlsx). Bằng cách kết hợp **Cơ chế phân tích XML lõi cực nhanh**, **Mạng lưới Băm Ảnh kép (MD5 + pHash)**, **Bộ nhớ đệm SQLite vĩnh viễn** và **COM Automation sâu với Microsoft Excel**, ứng dụng giúp phát hiện và định vị chính xác 100% các hình ảnh trùng lặp được tái sử dụng sai quy định trong môi trường báo cáo doanh nghiệp.
-
-![GitHub release (latest by date)](https://img.shields.io/badge/release-v2.1--Final-emerald.svg?style=flat-square)
-![Python](https://img.shields.io/badge/python-3.12-sky.svg?style=flat-square)
-![UI](https://img.shields.io/badge/UI-CustomTkinter-indigo.svg?style=flat-square)
-![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)
+> [🇺🇸 English Version](#-english-version) | [🇻🇳 Phiên bản Tiếng Việt](#-phien-ban-tieng-viet)
 
 ---
 
-## 📸 Kiến trúc Luồng Dữ liệu (System Workflow)
-
-Mô hình dưới đây mô tả hành trình xử lý từ khi kéo thả tệp tin Excel vào ứng dụng cho đến khi định vị chính xác vị trí ảnh trùng lặp trên Microsoft Excel:
+## 📸 System Workflow / Quy trình Hoạt động Hệ thống
 
 ```mermaid
 graph TD
-    %% Định nghĩa các lớp node
+    %% Nodes definition
     A[📂 Drop Files / Folders] --> B(🧵 Background Worker Thread)
     B --> C{🗄️ SQLite MD5 permanent Cache}
     
-    %% Quá trình Phân tích Zip/XML
-    C -->|Chưa có Hash| D[⚡ Fast Pass 1: Raw ZIP & XML Parser]
+    %% Fast parsing XML
+    C -->|New Image| D[⚡ Fast Pass 1: Raw ZIP & XML Parser]
     D --> E[📍 Extract Anchor Coordinates: Sheet/Cell/Row/Col]
     E --> F[✨ MD5 Hash of raw media data]
     
-    %% Bộ lọc trùng lặp
+    %% Duplicate Filter
     F --> G{📊 Duplicate Filter}
-    G -->|Trùng lặp| H[🖥️ Hierarchical Treeview List]
-    G -->|Nghi vấn| I[👁️ Pass 2: AI Vision pHash Engine]
+    G -->|Duplicated| H[🖥️ Hierarchical Treeview List]
+    G -->|Uncertain| I[👁️ Pass 2: AI Vision pHash Engine]
     
-    %% Cơ chế Hiển thị
+    %% GUI Rendering & COM
     H --> J[🔍 Parent-Child Sets with Zebra Striping]
     H --> K[📊 Right Panel: Interactive Spreadsheet Grid]
     
-    %%COM Deep Linking
+    %% COM Deep Linking
     K -->|Click OPEN| L[🖨️ Windows COM Automation]
     L --> M[🟢 Auto Open workbook, active target sheet & focus Cell address]
 ```
 
 ---
 
-## ✨ Các Tính Năng Đỉnh Cao (Feature Spotlight)
+## 🇺🇸 ENGLISH VERSION
 
-### 📊 1. Bảng lưới Lớp chi tiết Nhóm Trùng (Right Panel Spreadsheet Grid)
-*   **Trực quan hóa dạng bảng:** Hiển thị danh sách tất cả các vị trí trùng lặp của `SET` dưới dạng bảng lưới (Spreadsheet Grid) mini sắc nét với đầy đủ kẻ sọc Zebra sang trọng, không bị cắt cụt chữ.
-*   **Hành động tức thì:** Nút **`OPEN`** nhỏ gọn cho từng dòng giúp mở trực tiếp tệp Excel tương ứng chỉ với một click.
+**DUP-SEEKER** is an Enterprise-Grade Desktop solution designed to automate duplicate image auditing across bulk Excel reports (`.xlsx`). It guarantees absolute data integrity in corporate technical documents.
 
-### 🛡️ 2. Thuật toán Chống vỡ giao diện (Filename Capping)
-*   **Tự động co giãn an toàn:** Cột hiển thị tên tệp tin được giới hạn tối đa `380px`, tự động rút gọn bằng dấu `...` nếu tên tệp quá dài, bảo vệ 100% không gian hiển thị của các cột thông tin phụ (`Sheet`, `Cell Address`, `Occurrences`).
-*   **Căn chỉnh tối giản:** Cấu trúc [Tên File] (Căn trái) [Sheet] (Căn trái) [Cell] (Căn giữa) chuẩn mực như một báo cáo tài chính chuyên nghiệp.
+### 🌟 Core Excellence (The Best of DUP-SEEKER)
 
-### 🔌 3. COM Deep-Linking (Liên kết sâu tới Excel)
-*   Không chỉ mở file thông thường, DUP-SEEKER sử dụng cơ chế **Windows COM Interface** để:
-    1. Khởi động hoặc móc nối trực tiếp vào phiên làm việc đang chạy của **Microsoft Excel**.
-    2. Kích hoạt đúng Workbook và chuyển tiếp đến đúng **Sheet** chứa ảnh trùng.
-    3. **Tự động chọn (Select) và di chuyển màn hình** tập trung vào đúng ô tọa độ (`Cell Address`) chứa hình ảnh đó!
-
-### 🎨 4. Tích hợp Biểu tượng Hệ thống (Taskbar & Titlebar Icon)
-*   Sử dụng Windows **AppUserModelID** để đăng ký tiến trình riêng biệt với Windows Shell. Nhờ đó, biểu tượng `assets/app.ico` luôn hiển thị đồng bộ dưới Taskbar và góc tiêu đề cửa sổ, mang lại cảm giác của một sản phẩm thương mại cao cấp.
-
-### ⚡ 5. Tự động Phóng to Toàn màn hình (Startup Maximized)
-*   Tự động phóng to tối đa cửa sổ ngay khi khởi động bằng cơ chế **Trễ luồng giao diện (150ms)**, giải quyết triệt để lỗi CustomTkinter tự động co rút lại do tính toán DPI Scaling của Windows.
+*   **🔌 COM Deep-Linking & Auto-Focus:** Rather than just opening the file, DUP-SEEKER hooks directly into **Microsoft Excel** using Windows COM interfaces. Upon clicking **`OPEN`**, it dynamically activates the workbook, switches to the exact **Sheet**, and **selects & scroll-focuses** on the target **Cell Address** containing the duplicate image.
+*   **⚡ Hyper-Speed Double-Hash Engine:** Integrates a dual băm image network (**MD5 + AI Vision pHash**) backed by a **permanent SQLite cache database**. It processes thousands of images in seconds without duplicate calculations.
+*   **💎 Elite Corporate UI/UX:** Built on CustomTkinter with a premium Slate-Blue palette. Features:
+    *   **Zebra-striped Hierarchical Treeview** with capped dynamic column width (`380px`) to prevent long filenames from breaking the layout.
+    *   **Right Panel Spreadsheet Grid Table** showing all occurrences in a clean cell-bordered table with immediate action buttons.
+    *   **Taskbar Icon Sync & DPI Maximization Fix** ensuring native Windows integration on startup.
 
 ---
 
-## 🛠️ Hướng dẫn Cài đặt & Chạy từ nguồn
+### 🛠️ Installation & Usage Guide
 
-Nếu bạn là nhà phát triển và muốn chạy ứng dụng từ mã nguồn Python:
+> [!NOTE]
+> **No installation is required!** DUP-SEEKER is fully portable.
 
-### 1. Cài đặt các thư viện phụ thuộc:
-```bash
-pip install customtkinter pillow tkinterdnd2-universal imagehash xlsxwriter pywin32
-```
+#### Option 1: Run Pre-compiled Standalone EXE (For End-Users)
+1. Download and extract **`DUP-SEEKER_v2.1_Final.zip`**.
+2. Double-click **`dist/DUP-SEEKER/DUP-SEEKER.exe`** to launch instantly.
 
-### 2. Khởi chạy ứng dụng:
-```bash
-python app.py
-```
-
----
-
-## 📦 Quy trình Đóng gói thành tệp .EXE
-
-Ứng dụng được đóng gói chuyên nghiệp bằng **PyInstaller** dựa trên cấu hình tệp `.spec` đi kèm, đảm bảo đóng gói đầy đủ các thư viện kéo thả phức tạp (`tkinterdnd2`) và các tài nguyên giao diện:
-
-```bash
-# Thực hiện biên dịch ứng dụng sang thư mục phân phối Windows
-pyinstaller DUP-SEEKER.spec --noconfirm
-```
-
-> [!TIP]
-> Sản phẩm sau khi đóng gói sẽ nằm tại thư mục `dist/DUP-SEEKER`. Để chuyển giao, bạn chỉ cần nén (Zip) thư mục này lại thành **`DUP-SEEKER_v2.1_Final.zip`** là có thể gửi cho người dùng cuối chạy trực tiếp không cần cài đặt Python.
+#### Option 2: Run from Python Source (For Developers)
+1. Install required library dependencies:
+   ```bash
+   pip install customtkinter pillow tkinterdnd2-universal imagehash xlsxwriter pywin32
+   ```
+2. Launch the application:
+   ```bash
+   python app.py
+   ```
 
 ---
 
-## 👥 Nhóm phát triển & Bản quyền
-*   **Tác giả:** [ductai.nguyen](https://github.com/ductai-nguyen)
-*   **Bản quyền:** Phát hành dưới giấy phép MIT License. Bảo lưu mọi quyền đối với bộ nhận diện thương hiệu DUP-SEEKER.
+## 🇻🇳 PHIÊN BẢN TIẾNG VIỆT
+
+**DUP-SEEKER** là một giải pháp phần mềm Desktop chuyên dụng cấp doanh nghiệp giúp tự động hóa quá trình quét, phát hiện và kiểm tra ảnh trùng lặp trong hàng loạt báo cáo Excel (`.xlsx`), bảo vệ tuyệt đối tính trung thực của dữ liệu báo cáo kỹ thuật.
+
+### 🌟 Điểm Nhất Vượt Trội (Tính Năng Đáng Giá Nhất)
+
+*   **🔌 Liên kết Sâu COM & Tự động Định vị:** Không chỉ mở file thông thường, DUP-SEEKER kết nối trực tiếp vào hệ thống **Microsoft Excel** bằng Windows COM. Khi nhấp nút **`OPEN`**, phần mềm tự động kích hoạt Excel, mở đúng **Sheet**, và **bôi đen/tự động cuộn màn hình** tập trung vào chính xác **Tọa độ ô (Cell Address)** chứa bức ảnh trùng lặp đó!
+*   **⚡ Động cơ Băm Kép Siêu Tốc (MD5 + pHash):** Mạng lưới đối khớp ảnh kép kết hợp cùng **Cơ sở dữ liệu đệm SQLite vĩnh viễn** giúp quét và phân tích hàng nghìn bức ảnh chỉ trong vài giây mà không cần tính toán lại dữ liệu cũ.
+*   **💎 Giao diện Doanh nghiệp Đỉnh cao:** Giao diện CustomTkinter sang trọng với tông xanh Slate-Blue chủ đạo:
+    *   **Cây thư mục phân cấp kẻ sọc Zebra** với cột Tên file được giới hạn trần `380px` chống vỡ giao diện.
+    *   **Bảng lưới Spreadsheet Grid** hiển thị danh sách ảnh trùng ở góc phải sắc nét, dễ nhìn với các nút mở trực tiếp tiện lợi.
+    *   **Đồng bộ Icon dưới Taskbar & Khởi động Maximize cố định** mang lại cảm giác của ứng dụng thương mại hoàn thiện.
+
+---
+
+### 🛠️ Hướng dẫn Cài đặt & Sử dụng
+
+> [!NOTE]
+> **Không cần cài đặt!** DUP-SEEKER hoạt động hoàn toàn độc lập dưới dạng tệp chạy di động (Portable).
+
+#### Cách 1: Sử dụng bản EXE đóng gói sẵn (Cho người dùng cuối)
+1. Tải về và giải nén tệp tin **`DUP-SEEKER_v2.1_Final.zip`**.
+2. Nhấp đúp chuột vào tệp [DUP-SEEKER.exe](file:///e:/project/check_dup_img_excel/dist/DUP-SEEKER/DUP-SEEKER.exe) để khởi chạy phần mềm ngay lập tức.
+
+#### Cách 2: Chạy từ mã nguồn Python (Cho lập trình viên)
+1. Cài đặt các thư viện phụ thuộc:
+   ```bash
+   pip install customtkinter pillow tkinterdnd2-universal imagehash xlsxwriter pywin32
+   ```
+2. Khởi chạy ứng dụng:
+   ```bash
+   python app.py
+   ```
+
+---
+
+## 👥 Authors & License
+*   **Developed by:** [ductai.nguyen](https://github.com/ductai-nguyen)
+*   **License:** MIT License. All rights reserved.
