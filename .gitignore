@@ -52,3 +52,6 @@ OUTPUT/*
 
 # Agent
 .agent
+
+# Database cache
+*.db
