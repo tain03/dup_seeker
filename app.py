@@ -1555,7 +1555,7 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
         ctk.CTkLabel(scroll, text="🇻🇳 HƯỚNG DẪN SỬ DỤNG CHI TIẾT", font=ctk.CTkFont(size=20, weight="bold"), text_color=COLORS["primary"]).pack(anchor="w", pady=(0,15))
         
         vn_intro = (
-            "Chào mừng bạn đến với DUP-SEEKER v2.4 - Bộ công cụ kiểm tra tính toàn vẹn hình ảnh và công thức Excel chuyên nghiệp dành cho doanh nghiệp.\n"
+            "Chào mừng bạn đến với DUP-SEEKER v3.1 - Bộ công cụ kiểm tra tính toàn vẹn hình ảnh và công thức Excel chuyên nghiệp dành cho doanh nghiệp.\n"
         )
         ctk.CTkLabel(scroll, text=vn_intro, font=ctk.CTkFont(size=13, weight="bold"), justify="left", wraplength=640, text_color=COLORS["text_dark"]).pack(anchor="w", pady=(0,15))
 
@@ -1595,7 +1595,7 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
         ctk.CTkLabel(scroll, text="🇺🇸 DETAILED USER GUIDE", font=ctk.CTkFont(size=20, weight="bold"), text_color=COLORS["primary"]).pack(anchor="w", pady=(0,15))
         
         en_intro = (
-            "Welcome to DUP-SEEKER v2.4 - The Enterprise-Grade Image Integrity & Formula Protection Suite for Microsoft Excel.\n"
+            "Welcome to DUP-SEEKER v3.1 - The Enterprise-Grade Image Integrity & Formula Protection Suite for Microsoft Excel.\n"
         )
         ctk.CTkLabel(scroll, text=en_intro, font=ctk.CTkFont(size=13, weight="bold"), justify="left", wraplength=640, text_color=COLORS["text_dark"]).pack(anchor="w", pady=(0,15))
 
