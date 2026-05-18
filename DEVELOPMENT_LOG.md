@@ -592,4 +592,6 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-17 11:49:41]** clean: clean: prune old debug print statements from controller
 * **[2026-05-17 14:16:01]** test: docs: update Vietnamese translation notes
 * **[2026-05-18 13:30:00]** feat: implement high-performance Formula Pass/Fail Integrity Audit (v2.2) with COM deep-linking
+* **[2026-05-18 20:55:00]** feat: implement direct Shape/Picture selection and Excel focus for duplicate image audits (v2.3)
+* **[2026-05-18 21:05:00]** feat: integrate one-touch thread-safe Worksheet Protection for Excel formulas with password '1' (v2.4)
 

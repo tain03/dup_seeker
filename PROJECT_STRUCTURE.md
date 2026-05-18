@@ -87,7 +87,8 @@ CREATE TABLE IF NOT EXISTS current_scan (
     cell TEXT,           -- Địa chỉ ô chứa ảnh (ví dụ: B12)
     m_path TEXT,         -- Đường dẫn nội bộ của ảnh trong file zip (ví dụ: xl/media/image1.png)
     md5 TEXT,            -- Mã băm MD5 của ảnh thô
-    phash TEXT           -- Mã băm cảm nhận pHash phục vụ AI so khớp
+    phash TEXT,          -- Mã băm cảm nhận pHash phục vụ AI so khớp
+    pic_name TEXT        -- Tên vẽ (Shape Name) của ảnh trong Excel
 );
 
 -- 3. Chỉ mục tối ưu hóa tốc độ tìm kiếm và nhóm trùng lặp
@@ -143,5 +144,6 @@ sequenceDiagram
 Các tệp cấu hình `.spec` (`DUP-SEEKER.spec` và `AuditorElite.spec`) được tối ưu hóa đặc biệt cho PyInstaller:
 *   **`datas`**: Đính kèm trực tiếp thư mục `assets` vào gói ứng dụng thực thi.
 *   **`datas (site-packages)`**: Đính kèm tường minh thư mục chứa mã nguồn của `customtkinter` và `tkinterdnd2` để ngăn lỗi thiếu thư viện giao diện khi chạy trên máy tính khách.
+*   **`hiddenimports`**: Đính kèm tường minh `win32com`, `win32com.client`, `pythoncom` và `win32api` để đảm bảo hệ thống COM Automation mở rộng của Excel hoạt động ổn định trên file `.exe` đóng gói của người dùng.
 *   **`console=False`**: Ẩn hoàn toàn cửa sổ dòng lệnh đen (Command Prompt) khi người dùng khởi động phần mềm, tạo cảm giác chuyên nghiệp.
 *   **`icon=['assets\\app.ico']`**: Tích hợp trực tiếp icon thương hiệu vào tệp tin thực thi DUP-SEEKER.exe.
