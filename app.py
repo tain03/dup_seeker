@@ -20,6 +20,7 @@ import imagehash
 import xlsxwriter
 import sqlite3
 import re
+import win32com.client
 
 # --- THIẾT LẬP ID TIẾN TRÌNH CHO WINDOWS TASKBAR ICON ---
 try:
