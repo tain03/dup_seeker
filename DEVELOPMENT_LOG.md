@@ -591,3 +591,5 @@ This file tracks the historical development progress of the Elite Excel Audit Su
 * **[2026-05-16 10:29:05]** perf: refactor: streamline XML parsing dictionary mappings
 * **[2026-05-17 11:49:41]** clean: clean: prune old debug print statements from controller
 * **[2026-05-17 14:16:01]** test: docs: update Vietnamese translation notes
+* **[2026-05-18 13:30:00]** feat: implement high-performance Formula Pass/Fail Integrity Audit (v2.2) with COM deep-linking
+

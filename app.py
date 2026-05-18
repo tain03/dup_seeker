@@ -188,6 +188,96 @@ class ExcelProcessor:
         except Exception:
             return md5_val, None
 
+    @staticmethod
+    def extract_formula_integrity(file_path, ignore_sheets=None):
+        """Quét các ô trong tệp Excel để tìm ô chứa giá trị cứng Pass/Fail mà không dùng công thức"""
+        ignore_sheets = ignore_sheets or []
+        results = []
+        try:
+            with zipfile.ZipFile(file_path, 'r') as z:
+                # 1. Đọc tên sheet thực tế
+                sheet_names = {}
+                workbook_xml = z.read('xl/workbook.xml')
+                root = ET.fromstring(workbook_xml)
+                sheet_info = []
+                for s in root.findall('.//sh:sheet', NS):
+                    s_name = s.get('name')
+                    s_id = s.get('sheetId')
+                    r_id = s.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id')
+                    sheet_info.append((s_name, s_id, r_id))
+                    sheet_names[f"Sheet{s_id}"] = s_name
+
+                # 2. Đọc sharedStrings.xml (nếu có)
+                shared_strings = []
+                if 'xl/sharedStrings.xml' in z.namelist():
+                    ss_xml = z.read('xl/sharedStrings.xml')
+                    ss_root = ET.fromstring(ss_xml)
+                    for si in ss_root.findall('.//sh:t', NS):
+                        shared_strings.append(si.text or "")
+                
+                # 3. Đọc workbook relationships
+                wb_rels = {}
+                if 'xl/_rels/workbook.xml.rels' in z.namelist():
+                    rels_root = ET.fromstring(z.read('xl/_rels/workbook.xml.rels'))
+                    for rel in rels_root.findall('{http://schemas.openxmlformats.org/package/2006/relationships}Relationship'):
+                        wb_rels[rel.get('Id')] = rel.get('Target').replace('worksheets/', 'xl/worksheets/')
+
+                # Duyệt từng sheet
+                for s_name, s_id, r_id in sheet_info:
+                    if s_name in ignore_sheets:
+                        continue
+                    
+                    sheet_path = wb_rels.get(r_id, f"xl/worksheets/sheet{s_id}.xml")
+                    if sheet_path not in z.namelist():
+                        sheet_path = f"xl/{sheet_path}" if not sheet_path.startswith('xl/') else sheet_path
+                        if sheet_path not in z.namelist():
+                            continue
+                    
+                    sheet_xml = z.read(sheet_path)
+                    s_root = ET.fromstring(sheet_xml)
+                    
+                    for c_tag in s_root.findall('.//sh:c', NS):
+                        cell_addr = c_tag.get('r')
+                        cell_type = c_tag.get('t')
+                        
+                        has_formula = c_tag.find('sh:f', NS) is not None
+                        if has_formula:
+                            continue
+                        
+                        v_tag = c_tag.find('sh:v', NS)
+                        val = ""
+                        if v_tag is not None:
+                            raw_val = v_tag.text or ""
+                            if cell_type == 's':
+                                try:
+                                    idx = int(raw_val)
+                                    if 0 <= idx < len(shared_strings):
+                                        val = shared_strings[idx]
+                                except:
+                                    pass
+                            elif cell_type == 'inlineStr' or cell_type == 'str':
+                                val = raw_val
+                            else:
+                                val = raw_val
+                        
+                        is_tag = c_tag.find('.//sh:t', NS)
+                        if is_tag is not None and not val:
+                            val = is_tag.text or ""
+                        
+                        clean_val = val.strip().upper()
+                        if clean_val in ["PASS", "FAIL"]:
+                            results.append({
+                                "file": Path(file_path).name,
+                                "full_path": str(file_path),
+                                "sheet": s_name,
+                                "cell": cell_addr,
+                                "value": val,
+                                "type": "Hardcoded " + val.capitalize()
+                            })
+        except Exception as e:
+            print(f"Lỗi khi quét công thức tệp {Path(file_path).name}: {e}")
+        return results
+
 
 class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
     def __init__(self):
@@ -253,6 +343,14 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
 
         group_lbl = ctk.CTkLabel(self.sidebar, text="MAIN ACTIONS", font=ctk.CTkFont(size=11, weight="bold"), text_color=COLORS["text_muted"])
         group_lbl.pack(anchor="w", padx=35, pady=(0, 10))
+
+        self.audit_mode = ctk.CTkSegmentedButton(self.sidebar, values=["IMAGE AUDIT", "FORMULA AUDIT"],
+                                                 command=self.on_mode_change, fg_color=COLORS["sidebar_accent"],
+                                                 selected_color=COLORS["primary"], selected_hover_color="#0284C7",
+                                                 text_color=COLORS["white"], height=40, corner_radius=10)
+        self.audit_mode.pack(pady=(0, 15), padx=25, fill="x")
+        self.audit_mode.set("IMAGE AUDIT")
+        self.current_mode = "IMAGE AUDIT"
 
         self.btn_select = ctk.CTkButton(self.sidebar, text="SELECT DATA SOURCE", fg_color=COLORS["sidebar_accent"], hover_color=COLORS["primary"],
                                        border_width=1, border_color=COLORS["primary"], font=ctk.CTkFont(weight="bold"),
@@ -431,10 +529,32 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
             self.file_count_lbl.configure(text=f"{len(self.selected_files)} resources active", text_color=COLORS["primary"])
             self.m_files.configure(text=str(len(self.selected_files)))
 
+    def on_mode_change(self, value):
+        self.current_mode = value
+        self._reset_state()
+        if value == "IMAGE AUDIT":
+            self.tree.heading("#0", text="Duplicate Group / Files")
+            self.tree.heading("Sheet", text="Sheet")
+            self.tree.heading("Cell", text="Cell Address")
+            self.tree.heading("Matches", text="Occurrences")
+            self.preview_img_lbl.configure(text="Select a group to preview", image="")
+            self.m_files.configure(text=str(len(self.selected_files)))
+            self.m_dups.configure(text="0")
+            self.m_total.configure(text="0")
+        else:
+            self.tree.heading("#0", text="File Name")
+            self.tree.heading("Sheet", text="Sheet Name")
+            self.tree.heading("Cell", text="Cell Address")
+            self.tree.heading("Matches", text="Hardcoded Value")
+            self.preview_img_lbl.configure(text="Select a manual Pass/Fail cell to inspect", image="")
+            self.m_files.configure(text=str(len(self.selected_files)))
+            self.m_dups.configure(text="0")
+            self.m_total.configure(text="0")
+
     def start_scan(self):
         if self.is_scanning or not self.selected_files: return
         self.is_scanning = True
-        self.btn_scan.configure(state="disabled", text="INITIALIZING SQLITE...")
+        self.btn_scan.configure(state="disabled", text="INDEXING FILES..." if self.current_mode == "FORMULA AUDIT" else "INITIALIZING SQLITE...")
         self.btn_export.configure(state="disabled")
         threading.Thread(target=self.scan_logic, daemon=True).start()
 
@@ -446,142 +566,202 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
             
             ignore_list = [s.strip() for s in self.ignore_sheets_str.get().split(",") if s.strip()]
             
-            # Khởi tạo lại bảng tạm cho lượt quét mới
-            conn = sqlite3.connect('dup_seeker_cache.db')
-            c = conn.cursor()
-            c.execute("DELETE FROM current_scan")
-            conn.commit()
-            
-            # --- PASS 1: EXTRACT METADATA ---
-            self.after(0, lambda: self.btn_scan.configure(text="[1/3] INDEXING..."))
-            processed_files = 0
-            
-            # Chunking Data: Đọc luồng dữ liệu song song và GHI TRỰC TIẾP VÀO Ổ CỨNG thay vì RAM
-            with ProcessPoolExecutor(max_workers=max(1, multiprocessing.cpu_count() - 1)) as executor:
-                future_to_file = {executor.submit(ExcelProcessor.extract_metadata, f, ignore_list): f for f in self.selected_files}
-                for future in as_completed(future_to_file):
-                    metadata_list = future.result()
-                    if metadata_list:
-                        c.executemany('''INSERT INTO current_scan (full_path, file_name, sheet, cell, m_path, md5)
-                                         VALUES (:full_path, :file, :sheet, :cell, :m_path, :md5)''', metadata_list)
-                        conn.commit()
-                    processed_files += 1
-                    self.after(0, lambda p=processed_files: self.progress.set(p / len(self.selected_files) * 0.4))
-
-            # Tìm những hình ảnh (MD5) MỚI HOÀN TOÀN chưa từng được phân tích AI
-            c.execute('''SELECT DISTINCT current_scan.md5, current_scan.full_path, current_scan.m_path 
-                         FROM current_scan 
-                         LEFT JOIN hash_cache ON current_scan.md5 = hash_cache.md5 
-                         WHERE hash_cache.md5 IS NULL''')
-            uncached_tasks = c.fetchall()
-            
-            # --- PASS 2: COMPUTE AI VISION HASH ---
-            if uncached_tasks:
-                self.after(0, lambda: self.btn_scan.configure(text=f"[2/3] AI VISION ({len(uncached_tasks)})..."))
-                processed_hashes = 0
+            if self.current_mode == "IMAGE AUDIT":
+                conn = sqlite3.connect('dup_seeker_cache.db')
+                c = conn.cursor()
+                c.execute("DELETE FROM current_scan")
+                conn.commit()
+                
+                self.after(0, lambda: self.btn_scan.configure(text="[1/3] INDEXING..."))
+                processed_files = 0
                 
                 with ProcessPoolExecutor(max_workers=max(1, multiprocessing.cpu_count() - 1)) as executor:
-                    future_to_hash = {executor.submit(ExcelProcessor.compute_phash_for_unique, t): t for t in uncached_tasks}
-                    for future in as_completed(future_to_hash):
-                        md5_val, phash_val = future.result()
-                        if phash_val:
-                            c.execute("INSERT OR IGNORE INTO hash_cache (md5, phash) VALUES (?, ?)", (md5_val, phash_val))
-                        processed_hashes += 1
-                        if processed_hashes % 50 == 0:
-                            conn.commit() # Lưu định kỳ để bảo vệ dữ liệu nếu crash
-                        self.after(0, lambda p=processed_hashes: self.progress.set(0.4 + (p / len(uncached_tasks) * 0.5)))
-                conn.commit()
+                    future_to_file = {executor.submit(ExcelProcessor.extract_metadata, f, ignore_list): f for f in self.selected_files}
+                    for future in as_completed(future_to_file):
+                        metadata_list = future.result()
+                        if metadata_list:
+                            c.executemany('''INSERT INTO current_scan (full_path, file_name, sheet, cell, m_path, md5)
+                                             VALUES (:full_path, :file, :sheet, :cell, :m_path, :md5)''', metadata_list)
+                            conn.commit()
+                        processed_files += 1
+                        self.after(0, lambda p=processed_files: self.progress.set(p / len(self.selected_files) * 0.4))
 
-            # --- GROUPING ---
-            self.after(0, lambda: self.btn_scan.configure(text="[3/3] AGGREGATING..."))
-            self.after(0, lambda: self.progress.set(0.95))
-            
-            # Gắn p_hash cho mọi bức ảnh trong phiên quét hiện tại
-            c.execute('''UPDATE current_scan 
-                         SET phash = (SELECT phash FROM hash_cache WHERE hash_cache.md5 = current_scan.md5)''')
-            conn.commit()
-            
-            # Tìm các mã p_hash có số lần xuất hiện > 1
-            c.execute('''SELECT phash FROM current_scan 
-                         WHERE phash IS NOT NULL 
-                         GROUP BY phash HAVING COUNT(id) > 1''')
-            duplicate_phashes = [row[0] for row in c.fetchall()]
-            
-            duplicates = []
-            for p_hash in duplicate_phashes:
-                c.execute('''SELECT file_name, full_path, sheet, cell, m_path 
-                             FROM current_scan WHERE phash = ?''', (p_hash,))
-                locs = []
-                for row in c.fetchall():
-                    locs.append({
-                        'file': row[0],
-                        'full_path': row[1],
-                        'sheet': row[2],
-                        'cell': row[3],
-                        'm_path': row[4]
-                    })
-                duplicates.append(locs)
+                c.execute('''SELECT DISTINCT current_scan.md5, current_scan.full_path, current_scan.m_path 
+                             FROM current_scan 
+                             LEFT JOIN hash_cache ON current_scan.md5 = hash_cache.md5 
+                             WHERE hash_cache.md5 IS NULL''')
+                uncached_tasks = c.fetchall()
                 
-            c.execute("SELECT COUNT(id) FROM current_scan")
-            total_images = c.fetchone()[0]
-            conn.close()
-            
-            self.duplicates_cache = duplicates
-            self.after(0, lambda: self.render_results(duplicates, total_images))
+                if uncached_tasks:
+                    self.after(0, lambda: self.btn_scan.configure(text=f"[2/3] AI VISION ({len(uncached_tasks)})..."))
+                    processed_hashes = 0
+                    
+                    with ProcessPoolExecutor(max_workers=max(1, multiprocessing.cpu_count() - 1)) as executor:
+                        future_to_hash = {executor.submit(ExcelProcessor.compute_phash_for_unique, t): t for t in uncached_tasks}
+                        for future in as_completed(future_to_hash):
+                            md5_val, phash_val = future.result()
+                            if phash_val:
+                                c.execute("INSERT OR IGNORE INTO hash_cache (md5, phash) VALUES (?, ?)", (md5_val, phash_val))
+                            processed_hashes += 1
+                            if processed_hashes % 50 == 0:
+                                conn.commit()
+                            self.after(0, lambda p=processed_hashes: self.progress.set(0.4 + (p / len(uncached_tasks) * 0.5)))
+                    conn.commit()
+
+                self.after(0, lambda: self.btn_scan.configure(text="[3/3] AGGREGATING..."))
+                self.after(0, lambda: self.progress.set(0.95))
+                
+                c.execute('''UPDATE current_scan 
+                             SET phash = (SELECT phash FROM hash_cache WHERE hash_cache.md5 = current_scan.md5)''')
+                conn.commit()
+                
+                c.execute('''SELECT phash FROM current_scan 
+                             WHERE phash IS NOT NULL 
+                             GROUP BY phash HAVING COUNT(id) > 1''')
+                duplicate_phashes = [row[0] for row in c.fetchall()]
+                
+                duplicates = []
+                for p_hash in duplicate_phashes:
+                    c.execute('''SELECT file_name, full_path, sheet, cell, m_path 
+                                 FROM current_scan WHERE phash = ?''', (p_hash,))
+                    locs = []
+                    for row in c.fetchall():
+                        locs.append({
+                            'file': row[0],
+                            'full_path': row[1],
+                            'sheet': row[2],
+                            'cell': row[3],
+                            'm_path': row[4]
+                        })
+                    duplicates.append(locs)
+                    
+                c.execute("SELECT COUNT(id) FROM current_scan")
+                total_images = c.fetchone()[0]
+                conn.close()
+                
+                self.duplicates_cache = duplicates
+                self.after(0, lambda: self.render_results(duplicates, total_images))
+            else:
+                self.after(0, lambda: self.btn_scan.configure(text="[1/2] AUDITING FORMULAS..."))
+                processed_files = 0
+                all_results = []
+                
+                with ProcessPoolExecutor(max_workers=max(1, multiprocessing.cpu_count() - 1)) as executor:
+                    future_to_file = {executor.submit(ExcelProcessor.extract_formula_integrity, f, ignore_list): f for f in self.selected_files}
+                    for future in as_completed(future_to_file):
+                        res = future.result()
+                        if res:
+                            all_results.extend(res)
+                        processed_files += 1
+                        self.after(0, lambda p=processed_files: self.progress.set(p / len(self.selected_files) * 0.9))
+                        
+                self.after(0, lambda: self.btn_scan.configure(text="[2/2] COMPILING RESULTS..."))
+                self.after(0, lambda: self.progress.set(0.95))
+                
+                self.duplicates_cache = all_results
+                self.after(0, lambda: self.render_results(all_results, len(all_results)))
         except Exception as e:
             self.after(0, lambda e=e: messagebox.showerror("System Error", str(e)))
             self.after(0, self._reset_state)
 
     def render_results(self, duplicates, total_count):
-        self.m_dups.configure(text=str(len(duplicates)))
-        self.m_total.configure(text=str(total_count))
-        
         self.tree.delete(*self.tree.get_children())
         self.node_data = {}
         
-        if not duplicates:
-            self.btn_export.configure(state="disabled")
-            self.preview_img_lbl.configure(text="SYSTEM INTEGRITY VERIFIED - NO DUPLICATES", text_color=COLORS["success"])
-        else:
-            self.btn_export.configure(state="normal")
-            self.preview_img_lbl.configure(text="Select a group or item on the left to preview", text_color=COLORS["text_muted"])
+        if self.current_mode == "IMAGE AUDIT":
+            self.m_dups.configure(text=str(len(duplicates)))
+            self.m_total.configure(text=str(total_count))
             
-            # Khởi tạo độ dài cột mặc định bằng tiêu đề
-            max_tree_len = len("Duplicate Group / Files")
-            max_sheet_len = len("Sheet")
-            max_cell_len = len("Cell Address")
-            max_matches_len = len("Occurrences")
-            
-            for i, group in enumerate(duplicates):
-                parent_iid = f"set_{i}"
-                self.tree.insert("", "end", iid=parent_iid, text=f"SET #{i+1}", values=("", "", f"{len(group)} matches"), tags=("group_row",))
-                self.node_data[parent_iid] = {"type": "group", "group": group, "index": i}
+            if not duplicates:
+                self.btn_export.configure(state="disabled")
+                self.preview_img_lbl.configure(text="SYSTEM INTEGRITY VERIFIED - NO DUPLICATES", text_color=COLORS["success"])
+            else:
+                self.btn_export.configure(state="normal")
+                self.preview_img_lbl.configure(text="Select a group or item on the left to preview", text_color=COLORS["text_muted"])
                 
-                max_tree_len = max(max_tree_len, len(f"SET #{i+1}"))
-                max_matches_len = max(max_matches_len, len(f"{len(group)} matches"))
+                max_tree_len = len("Duplicate Group / Files")
+                max_sheet_len = len("Sheet")
+                max_cell_len = len("Cell Address")
+                max_matches_len = len("Occurrences")
                 
-                for j, loc in enumerate(group):
-                    child_iid = f"child_{i}_{j}"
-                    row_tag = "even_row" if j % 2 == 0 else "odd_row"
-                    self.tree.insert(parent_iid, "end", iid=child_iid, text=loc['file'], values=(loc['sheet'], loc['cell'], ""), tags=(row_tag,))
-                    self.node_data[child_iid] = {"type": "loc", "loc": loc}
+                for i, group in enumerate(duplicates):
+                    parent_iid = f"set_{i}"
+                    self.tree.insert("", "end", iid=parent_iid, text=f"SET #{i+1}", values=("", "", f"{len(group)} matches"), tags=("group_row",))
+                    self.node_data[parent_iid] = {"type": "group", "group": group, "index": i}
                     
-                    max_tree_len = max(max_tree_len, len(loc['file']) + 4)
-                    max_sheet_len = max(max_sheet_len, len(loc['sheet']))
-                    max_cell_len = max(max_cell_len, len(loc['cell']))
-            
-            # Giới hạn độ rộng tối đa tự động (Cap width) để tránh việc file có tên siêu dài đẩy các cột khác ra rìa màn hình
-            tree_width = min(max(max_tree_len * 8 + 40, 250), 380)
-            sheet_width = min(max(max_sheet_len * 8 + 25, 120), 200)
-            cell_width = min(max(max_cell_len * 8 + 25, 100), 130)
-            matches_width = min(max(max_matches_len * 8 + 25, 110), 150)
-            
-            # Cấu hình các cột co giãn thông minh, bảo vệ không gian hiển thị của các cột thông tin phụ
-            self.tree.column("#0", width=tree_width, minwidth=180, stretch=True)
-            self.tree.column("Sheet", width=sheet_width, minwidth=100, stretch=True, anchor="w")
-            self.tree.column("Cell", width=cell_width, minwidth=80, anchor="center", stretch=True)
-            self.tree.column("Matches", width=matches_width, minwidth=100, anchor="center", stretch=True)
+                    max_tree_len = max(max_tree_len, len(f"SET #{i+1}"))
+                    max_matches_len = max(max_matches_len, len(f"{len(group)} matches"))
+                    
+                    for j, loc in enumerate(group):
+                        child_iid = f"child_{i}_{j}"
+                        row_tag = "even_row" if j % 2 == 0 else "odd_row"
+                        self.tree.insert(parent_iid, "end", iid=child_iid, text=loc['file'], values=(loc['sheet'], loc['cell'], ""), tags=(row_tag,))
+                        self.node_data[child_iid] = {"type": "loc", "loc": loc}
+                        
+                        max_tree_len = max(max_tree_len, len(loc['file']) + 4)
+                        max_sheet_len = max(max_sheet_len, len(loc['sheet']))
+                        max_cell_len = max(max_cell_len, len(loc['cell']))
                 
+                tree_width = min(max(max_tree_len * 8 + 40, 250), 380)
+                sheet_width = min(max(max_sheet_len * 8 + 25, 120), 200)
+                cell_width = min(max(max_cell_len * 8 + 25, 100), 130)
+                matches_width = min(max(max_matches_len * 8 + 25, 110), 150)
+                
+                self.tree.column("#0", width=tree_width, minwidth=180, stretch=True)
+                self.tree.column("Sheet", width=sheet_width, minwidth=100, stretch=True, anchor="w")
+                self.tree.column("Cell", width=cell_width, minwidth=80, anchor="center", stretch=True)
+                self.tree.column("Matches", width=matches_width, minwidth=100, anchor="center", stretch=True)
+        else:
+            self.m_dups.configure(text=str(len(duplicates)))
+            self.m_total.configure(text=str(total_count))
+            
+            if not duplicates:
+                self.btn_export.configure(state="disabled")
+                self.preview_img_lbl.configure(text="SYSTEM INTEGRITY VERIFIED - NO MANUAL PASS/FAIL DETECTED", text_color=COLORS["success"])
+            else:
+                self.btn_export.configure(state="normal")
+                self.preview_img_lbl.configure(text="Select an item on the left to inspect", text_color=COLORS["text_muted"])
+                
+                max_tree_len = len("File Name")
+                max_sheet_len = len("Sheet Name")
+                max_cell_len = len("Cell Address")
+                max_matches_len = len("Hardcoded Value")
+                
+                from collections import defaultdict
+                by_file = defaultdict(list)
+                for item in duplicates:
+                    by_file[item['file']].append(item)
+                    
+                for f_name, items in by_file.items():
+                    max_tree_len = max(max_tree_len, len(f_name))
+                    parent_iid = f"file_{f_name.replace(' ', '_')}"
+                    self.tree.insert("", "end", iid=parent_iid, text=f_name, values=("", "", f"{len(items)} cells"), tags=("group_row",))
+                    self.node_data[parent_iid] = {"type": "formula_file", "file": f_name, "items": items}
+                    
+                    for j, item in enumerate(items):
+                        child_iid = f"cell_{f_name.replace(' ', '_')}_{j}"
+                        row_tag = "even_row" if j % 2 == 0 else "odd_row"
+                        self.tree.insert(parent_iid, "end", iid=child_iid, text=f"Cell: {item['cell']} [{item['value']}]",
+                                         values=(item['sheet'], item['cell'], item['value']), tags=(row_tag,))
+                        self.node_data[child_iid] = {"type": "formula_cell", "item": item}
+                        
+                        max_sheet_len = max(max_sheet_len, len(item['sheet']))
+                        max_cell_len = max(max_cell_len, len(item['cell']))
+                        max_matches_len = max(max_matches_len, len(item['value']))
+                
+                tree_width = min(max(max_tree_len * 8 + 40, 250), 380)
+                sheet_width = min(max(max_sheet_len * 8 + 25, 120), 200)
+                cell_width = min(max(max_cell_len * 8 + 25, 100), 130)
+                matches_width = min(max(max_matches_len * 8 + 25, 110), 150)
+                
+                self.tree.column("#0", width=tree_width, minwidth=180, stretch=True)
+                self.tree.column("Sheet", width=sheet_width, minwidth=100, stretch=True, anchor="w")
+                self.tree.column("Cell", width=cell_width, minwidth=80, anchor="center", stretch=True)
+                self.tree.column("Matches", width=matches_width, minwidth=100, anchor="center", stretch=True)
+                
+                for child in self.tree.get_children():
+                    self.tree.item(child, open=True)
+                    
         self._reset_state()
 
     def on_tree_select(self, event):
@@ -592,116 +772,185 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
         data = self.node_data.get(iid)
         if not data: return
         
-        # 1. Tải ảnh Preview
-        loc_for_preview = None
-        if data["type"] == "group":
-            loc_for_preview = data["group"][0]
+        if self.current_mode == "IMAGE AUDIT":
+            loc_for_preview = None
+            if data["type"] == "group":
+                loc_for_preview = data["group"][0]
+            else:
+                loc_for_preview = data["loc"]
+                
+            try:
+                with zipfile.ZipFile(loc_for_preview['full_path'], 'r') as z:
+                    img_data = z.read(loc_for_preview['m_path'])
+                pil_img = Image.open(io.BytesIO(img_data))
+                pil_img.thumbnail((320, 320))
+                ctk_img = ctk.CTkImage(light_image=pil_img, dark_image=pil_img, size=pil_img.size)
+                self.preview_img_lbl.configure(image=ctk_img, text="")
+            except Exception:
+                self.preview_img_lbl.configure(image="", text="Error loading image")
+                
+            for child in self.preview_details_scroll.winfo_children(): child.destroy()
+            
+            if data["type"] == "group":
+                group = data["group"]
+                
+                group_frame = ctk.CTkFrame(self.preview_details_scroll, fg_color=COLORS["bg_canvas"], corner_radius=12, border_width=1, border_color=COLORS["border"])
+                group_frame.pack(fill="both", expand=True, padx=5, pady=5)
+                
+                ctk.CTkLabel(group_frame, text=f"SET #{data['index'] + 1} OVERVIEW", font=ctk.CTkFont(size=11, weight="bold"), text_color=COLORS["text_muted"]).pack(anchor="w", padx=15, pady=(15, 5))
+                ctk.CTkLabel(group_frame, text=f"Total Occurrences: {len(group)} duplicates", font=ctk.CTkFont(size=14, weight="bold"), text_color=COLORS["primary"]).pack(anchor="w", padx=15, pady=(0, 12))
+                
+                grid_container = ctk.CTkFrame(group_frame, fg_color=COLORS["border"], corner_radius=8)
+                grid_container.pack(fill="x", padx=15, pady=(0, 15))
+                
+                grid_container.grid_columnconfigure(0, weight=3)
+                grid_container.grid_columnconfigure(1, weight=2)
+                grid_container.grid_columnconfigure(2, weight=1)
+                grid_container.grid_columnconfigure(3, weight=1)
+                
+                headers = ["File Name", "Sheet", "Cell", "Action"]
+                for col_idx, h_text in enumerate(headers):
+                    h_cell = ctk.CTkFrame(grid_container, fg_color="#F1F5F9", corner_radius=0)
+                    h_cell.grid(row=0, column=col_idx, sticky="nsew", padx=1, pady=1)
+                    ctk.CTkLabel(h_cell, text=h_text, font=ctk.CTkFont(size=10, weight="bold"), text_color=COLORS["text_dark"]).pack(padx=5, pady=6)
+                    
+                for row_idx, loc in enumerate(group):
+                    r = row_idx + 1
+                    bg_color = "#F8FAFC" if row_idx % 2 == 0 else "#FFFFFF"
+                    
+                    c0_frame = ctk.CTkFrame(grid_container, fg_color=bg_color, corner_radius=0)
+                    c0_frame.grid(row=r, column=0, sticky="nsew", padx=1, pady=1)
+                    ctk.CTkLabel(c0_frame, text=loc['file'], font=ctk.CTkFont(size=10), text_color=COLORS["text_dark"], wraplength=130, justify="left").pack(anchor="w", padx=6, pady=6)
+                    
+                    c1_frame = ctk.CTkFrame(grid_container, fg_color=bg_color, corner_radius=0)
+                    c1_frame.grid(row=r, column=1, sticky="nsew", padx=1, pady=1)
+                    ctk.CTkLabel(c1_frame, text=loc['sheet'], font=ctk.CTkFont(size=10), text_color=COLORS["text_dark"], wraplength=80).pack(padx=5, pady=6)
+                    
+                    c2_frame = ctk.CTkFrame(grid_container, fg_color=bg_color, corner_radius=0)
+                    c2_frame.grid(row=r, column=2, sticky="nsew", padx=1, pady=1)
+                    ctk.CTkLabel(c2_frame, text=loc['cell'], font=ctk.CTkFont(size=10, weight="bold"), text_color=COLORS["danger"]).pack(padx=5, pady=6)
+                    
+                    c3_frame = ctk.CTkFrame(grid_container, fg_color=bg_color, corner_radius=0)
+                    c3_frame.grid(row=r, column=3, sticky="nsew", padx=1, pady=1)
+                    btn = ctk.CTkButton(c3_frame, text="OPEN", width=50, height=22, fg_color=COLORS["secondary"], hover_color=COLORS["primary"], corner_radius=4,
+                                       font=ctk.CTkFont(size=9, weight="bold"), command=lambda p=loc['full_path'], s=loc['sheet'], c=loc['cell']: self.open_excel_at_location(p, s, c))
+                    btn.pack(padx=5, pady=4)
+            else:
+                loc = data["loc"]
+                loc_frame = ctk.CTkFrame(self.preview_details_scroll, fg_color=COLORS["bg_canvas"], corner_radius=12, border_width=1, border_color=COLORS["border"])
+                loc_frame.pack(fill="both", expand=True, padx=5, pady=5)
+                
+                ctk.CTkLabel(loc_frame, text="OCCURRENCE DETAILS", font=ctk.CTkFont(size=11, weight="bold"), text_color=COLORS["text_muted"]).pack(anchor="w", padx=15, pady=(15, 10))
+                
+                f_box = ctk.CTkFrame(loc_frame, fg_color="transparent")
+                f_box.pack(fill="x", padx=15, pady=4)
+                ctk.CTkLabel(f_box, text="File Name:", font=ctk.CTkFont(size=12, weight="bold"), text_color=COLORS["text_dark"], width=80, anchor="w").pack(side="left")
+                ctk.CTkLabel(f_box, text=loc['file'], font=ctk.CTkFont(size=12), text_color=COLORS["text_dark"], anchor="w", wraplength=200, justify="left").pack(side="left", fill="x", expand=True)
+                
+                s_box = ctk.CTkFrame(loc_frame, fg_color="transparent")
+                s_box.pack(fill="x", padx=15, pady=4)
+                ctk.CTkLabel(s_box, text="Sheet:", font=ctk.CTkFont(size=12, weight="bold"), text_color=COLORS["text_dark"], width=80, anchor="w").pack(side="left")
+                ctk.CTkLabel(s_box, text=loc['sheet'], font=ctk.CTkFont(size=12), text_color=COLORS["primary"], anchor="w").pack(side="left")
+                
+                c_box = ctk.CTkFrame(loc_frame, fg_color="transparent")
+                c_box.pack(fill="x", padx=15, pady=4)
+                ctk.CTkLabel(c_box, text="Cell Address:", font=ctk.CTkFont(size=12, weight="bold"), text_color=COLORS["text_dark"], width=80, anchor="w").pack(side="left")
+                ctk.CTkLabel(c_box, text=loc['cell'], font=ctk.CTkFont(size=12, weight="bold"), text_color=COLORS["danger"], anchor="w").pack(side="left")
+                
+                p_box = ctk.CTkFrame(loc_frame, fg_color="transparent")
+                p_box.pack(fill="x", padx=15, pady=4)
+                ctk.CTkLabel(p_box, text="Full Path:", font=ctk.CTkFont(size=10, weight="bold"), text_color=COLORS["text_muted"], width=80, anchor="w").pack(side="left")
+                ctk.CTkLabel(p_box, text=loc['full_path'], font=ctk.CTkFont(size=9), text_color=COLORS["text_muted"], anchor="w", wraplength=200, justify="left").pack(side="left", fill="x", expand=True)
+                
+                btn = ctk.CTkButton(loc_frame, text="📂 OPEN EXCEL FILE", height=45, fg_color=COLORS["primary"], hover_color=COLORS["primary_glow"], corner_radius=10,
+                                   font=ctk.CTkFont(size=13, weight="bold"), 
+                                   command=lambda p=loc['full_path'], s=loc['sheet'], c=loc['cell']: self.open_excel_at_location(p, s, c))
+                btn.pack(fill="x", padx=15, pady=(20, 15))
         else:
-            loc_for_preview = data["loc"]
+            self.preview_img_lbl.configure(image="", text="⚠️ FORMULA INTEGRITY ALERT", text_color=COLORS["danger"])
+            for child in self.preview_details_scroll.winfo_children(): child.destroy()
             
-        try:
-            with zipfile.ZipFile(loc_for_preview['full_path'], 'r') as z:
-                img_data = z.read(loc_for_preview['m_path'])
-            pil_img = Image.open(io.BytesIO(img_data))
-            pil_img.thumbnail((320, 320))
-            ctk_img = ctk.CTkImage(light_image=pil_img, dark_image=pil_img, size=pil_img.size)
-            self.preview_img_lbl.configure(image=ctk_img, text="")
-        except Exception:
-            self.preview_img_lbl.configure(image="", text="Error loading image")
-            
-        # 2. Cập nhật thông tin chi tiết
-        for child in self.preview_details_scroll.winfo_children(): child.destroy()
-        
-        if data["type"] == "group":
-            group = data["group"]
-            
-            # Khung tổng quan của nhóm trùng lặp
-            group_frame = ctk.CTkFrame(self.preview_details_scroll, fg_color=COLORS["bg_canvas"], corner_radius=12, border_width=1, border_color=COLORS["border"])
-            group_frame.pack(fill="both", expand=True, padx=5, pady=5)
-            
-            ctk.CTkLabel(group_frame, text=f"SET #{data['index'] + 1} OVERVIEW", font=ctk.CTkFont(size=11, weight="bold"), text_color=COLORS["text_muted"]).pack(anchor="w", padx=15, pady=(15, 5))
-            ctk.CTkLabel(group_frame, text=f"Total Occurrences: {len(group)} duplicates", font=ctk.CTkFont(size=14, weight="bold"), text_color=COLORS["primary"]).pack(anchor="w", padx=15, pady=(0, 12))
-            
-            # Thiết lập bảng viền lưới (Spreadsheet Grid)
-            grid_container = ctk.CTkFrame(group_frame, fg_color=COLORS["border"], corner_radius=8) # Background làm màu viền lưới
-            grid_container.pack(fill="x", padx=15, pady=(0, 15))
-            
-            # Cấu hình tỉ lệ co giãn cột cho bảng lưới
-            grid_container.grid_columnconfigure(0, weight=3) # File name
-            grid_container.grid_columnconfigure(1, weight=2) # Sheet
-            grid_container.grid_columnconfigure(2, weight=1) # Cell
-            grid_container.grid_columnconfigure(3, weight=1) # Action
-            
-            # Tạo Tiêu đề Cột của bảng lưới (Header Row)
-            headers = ["File Name", "Sheet", "Cell", "Action"]
-            for col_idx, h_text in enumerate(headers):
-                h_cell = ctk.CTkFrame(grid_container, fg_color="#F1F5F9", corner_radius=0)
-                h_cell.grid(row=0, column=col_idx, sticky="nsew", padx=1, pady=1)
-                ctk.CTkLabel(h_cell, text=h_text, font=ctk.CTkFont(size=10, weight="bold"), text_color=COLORS["text_dark"]).pack(padx=5, pady=6)
+            if data["type"] == "formula_file":
+                f_name = data["file"]
+                items = data["items"]
                 
-            # Đổ dữ liệu các file trùng lặp vào lưới (Data Rows)
-            for row_idx, loc in enumerate(group):
-                r = row_idx + 1
-                bg_color = "#F8FAFC" if row_idx % 2 == 0 else "#FFFFFF"
+                group_frame = ctk.CTkFrame(self.preview_details_scroll, fg_color=COLORS["bg_canvas"], corner_radius=12, border_width=1, border_color=COLORS["border"])
+                group_frame.pack(fill="both", expand=True, padx=5, pady=5)
                 
-                # Cột 0: Tên File
-                c0_frame = ctk.CTkFrame(grid_container, fg_color=bg_color, corner_radius=0)
-                c0_frame.grid(row=r, column=0, sticky="nsew", padx=1, pady=1)
-                ctk.CTkLabel(c0_frame, text=loc['file'], font=ctk.CTkFont(size=10), text_color=COLORS["text_dark"], wraplength=130, justify="left").pack(anchor="w", padx=6, pady=6)
+                ctk.CTkLabel(group_frame, text="FILE INTEGRITY REPORT", font=ctk.CTkFont(size=11, weight="bold"), text_color=COLORS["text_muted"]).pack(anchor="w", padx=15, pady=(15, 5))
+                ctk.CTkLabel(group_frame, text=f"Found: {len(items)} hardcoded cells", font=ctk.CTkFont(size=14, weight="bold"), text_color=COLORS["danger"]).pack(anchor="w", padx=15, pady=(0, 12))
                 
-                # Cột 1: Sheet
-                c1_frame = ctk.CTkFrame(grid_container, fg_color=bg_color, corner_radius=0)
-                c1_frame.grid(row=r, column=1, sticky="nsew", padx=1, pady=1)
-                ctk.CTkLabel(c1_frame, text=loc['sheet'], font=ctk.CTkFont(size=10), text_color=COLORS["text_dark"], wraplength=80).pack(padx=5, pady=6)
+                grid_container = ctk.CTkFrame(group_frame, fg_color=COLORS["border"], corner_radius=8)
+                grid_container.pack(fill="x", padx=15, pady=(0, 15))
                 
-                # Cột 2: Ô Cell
-                c2_frame = ctk.CTkFrame(grid_container, fg_color=bg_color, corner_radius=0)
-                c2_frame.grid(row=r, column=2, sticky="nsew", padx=1, pady=1)
-                ctk.CTkLabel(c2_frame, text=loc['cell'], font=ctk.CTkFont(size=10, weight="bold"), text_color=COLORS["danger"]).pack(padx=5, pady=6)
+                grid_container.grid_columnconfigure(0, weight=2)
+                grid_container.grid_columnconfigure(1, weight=1)
+                grid_container.grid_columnconfigure(2, weight=1)
+                grid_container.grid_columnconfigure(3, weight=1)
                 
-                # Cột 3: Nút bấm mở file trực tiếp
-                c3_frame = ctk.CTkFrame(grid_container, fg_color=bg_color, corner_radius=0)
-                c3_frame.grid(row=r, column=3, sticky="nsew", padx=1, pady=1)
-                btn = ctk.CTkButton(c3_frame, text="OPEN", width=50, height=22, fg_color=COLORS["secondary"], hover_color=COLORS["primary"], corner_radius=4,
-                                   font=ctk.CTkFont(size=9, weight="bold"), command=lambda p=loc['full_path'], s=loc['sheet'], c=loc['cell']: self.open_excel_at_location(p, s, c))
-                btn.pack(padx=5, pady=4)
-        else:
-            # Giao diện khi chọn một Vị trí trùng cụ thể (Child Node)
-            loc = data["loc"]
-            loc_frame = ctk.CTkFrame(self.preview_details_scroll, fg_color=COLORS["bg_canvas"], corner_radius=12, border_width=1, border_color=COLORS["border"])
-            loc_frame.pack(fill="both", expand=True, padx=5, pady=5)
-            
-            ctk.CTkLabel(loc_frame, text="OCCURRENCE DETAILS", font=ctk.CTkFont(size=11, weight="bold"), text_color=COLORS["text_muted"]).pack(anchor="w", padx=15, pady=(15, 10))
-            
-            # File
-            f_box = ctk.CTkFrame(loc_frame, fg_color="transparent")
-            f_box.pack(fill="x", padx=15, pady=4)
-            ctk.CTkLabel(f_box, text="File Name:", font=ctk.CTkFont(size=12, weight="bold"), text_color=COLORS["text_dark"], width=80, anchor="w").pack(side="left")
-            ctk.CTkLabel(f_box, text=loc['file'], font=ctk.CTkFont(size=12), text_color=COLORS["text_dark"], anchor="w", wraplength=200, justify="left").pack(side="left", fill="x", expand=True)
-            
-            # Sheet
-            s_box = ctk.CTkFrame(loc_frame, fg_color="transparent")
-            s_box.pack(fill="x", padx=15, pady=4)
-            ctk.CTkLabel(s_box, text="Sheet:", font=ctk.CTkFont(size=12, weight="bold"), text_color=COLORS["text_dark"], width=80, anchor="w").pack(side="left")
-            ctk.CTkLabel(s_box, text=loc['sheet'], font=ctk.CTkFont(size=12), text_color=COLORS["primary"], anchor="w").pack(side="left")
-            
-            # Cell
-            c_box = ctk.CTkFrame(loc_frame, fg_color="transparent")
-            c_box.pack(fill="x", padx=15, pady=4)
-            ctk.CTkLabel(c_box, text="Cell Address:", font=ctk.CTkFont(size=12, weight="bold"), text_color=COLORS["text_dark"], width=80, anchor="w").pack(side="left")
-            ctk.CTkLabel(c_box, text=loc['cell'], font=ctk.CTkFont(size=12, weight="bold"), text_color=COLORS["danger"], anchor="w").pack(side="left")
-            
-            # Path
-            p_box = ctk.CTkFrame(loc_frame, fg_color="transparent")
-            p_box.pack(fill="x", padx=15, pady=4)
-            ctk.CTkLabel(p_box, text="Full Path:", font=ctk.CTkFont(size=10, weight="bold"), text_color=COLORS["text_muted"], width=80, anchor="w").pack(side="left")
-            ctk.CTkLabel(p_box, text=loc['full_path'], font=ctk.CTkFont(size=9), text_color=COLORS["text_muted"], anchor="w", wraplength=200, justify="left").pack(side="left", fill="x", expand=True)
-            
-            # Nút bấm mở file to rõ ràng, không lo bị đè/mất text
-            btn = ctk.CTkButton(loc_frame, text="📂 OPEN EXCEL FILE", height=45, fg_color=COLORS["primary"], hover_color=COLORS["primary_glow"], corner_radius=10,
-                               font=ctk.CTkFont(size=13, weight="bold"), 
-                               command=lambda p=loc['full_path'], s=loc['sheet'], c=loc['cell']: self.open_excel_at_location(p, s, c))
-            btn.pack(fill="x", padx=15, pady=(20, 15))
+                headers = ["Sheet Name", "Cell", "Static Value", "Action"]
+                for col_idx, h_text in enumerate(headers):
+                    h_cell = ctk.CTkFrame(grid_container, fg_color="#F1F5F9", corner_radius=0)
+                    h_cell.grid(row=0, column=col_idx, sticky="nsew", padx=1, pady=1)
+                    ctk.CTkLabel(h_cell, text=h_text, font=ctk.CTkFont(size=10, weight="bold"), text_color=COLORS["text_dark"]).pack(padx=5, pady=6)
+                    
+                for row_idx, item in enumerate(items):
+                    r = row_idx + 1
+                    bg_color = "#F8FAFC" if row_idx % 2 == 0 else "#FFFFFF"
+                    
+                    c0_frame = ctk.CTkFrame(grid_container, fg_color=bg_color, corner_radius=0)
+                    c0_frame.grid(row=r, column=0, sticky="nsew", padx=1, pady=1)
+                    ctk.CTkLabel(c0_frame, text=item['sheet'], font=ctk.CTkFont(size=10), text_color=COLORS["text_dark"], wraplength=120).pack(padx=5, pady=6)
+                    
+                    c1_frame = ctk.CTkFrame(grid_container, fg_color=bg_color, corner_radius=0)
+                    c1_frame.grid(row=r, column=1, sticky="nsew", padx=1, pady=1)
+                    ctk.CTkLabel(c1_frame, text=item['cell'], font=ctk.CTkFont(size=10, weight="bold"), text_color=COLORS["danger"]).pack(padx=5, pady=6)
+                    
+                    c2_frame = ctk.CTkFrame(grid_container, fg_color=bg_color, corner_radius=0)
+                    c2_frame.grid(row=r, column=2, sticky="nsew", padx=1, pady=1)
+                    ctk.CTkLabel(c2_frame, text=item['value'], font=ctk.CTkFont(size=10), text_color=COLORS["text_muted"]).pack(padx=5, pady=6)
+                    
+                    c3_frame = ctk.CTkFrame(grid_container, fg_color=bg_color, corner_radius=0)
+                    c3_frame.grid(row=r, column=3, sticky="nsew", padx=1, pady=1)
+                    btn = ctk.CTkButton(c3_frame, text="OPEN", width=50, height=22, fg_color=COLORS["secondary"], hover_color=COLORS["primary"], corner_radius=4,
+                                       font=ctk.CTkFont(size=9, weight="bold"), command=lambda p=item['full_path'], s=item['sheet'], c=item['cell']: self.open_excel_at_location(p, s, c))
+                    btn.pack(padx=5, pady=4)
+            else:
+                item = data["item"]
+                
+                loc_frame = ctk.CTkFrame(self.preview_details_scroll, fg_color=COLORS["bg_canvas"], corner_radius=12, border_width=1, border_color=COLORS["border"])
+                loc_frame.pack(fill="both", expand=True, padx=5, pady=5)
+                
+                ctk.CTkLabel(loc_frame, text="FORMULA VIOLATION DETAILS", font=ctk.CTkFont(size=11, weight="bold"), text_color=COLORS["text_muted"]).pack(anchor="w", padx=15, pady=(15, 10))
+                
+                f_box = ctk.CTkFrame(loc_frame, fg_color="transparent")
+                f_box.pack(fill="x", padx=15, pady=4)
+                ctk.CTkLabel(f_box, text="File Name:", font=ctk.CTkFont(size=12, weight="bold"), text_color=COLORS["text_dark"], width=90, anchor="w").pack(side="left")
+                ctk.CTkLabel(f_box, text=item['file'], font=ctk.CTkFont(size=12), text_color=COLORS["text_dark"], anchor="w", wraplength=200, justify="left").pack(side="left", fill="x", expand=True)
+                
+                s_box = ctk.CTkFrame(loc_frame, fg_color="transparent")
+                s_box.pack(fill="x", padx=15, pady=4)
+                ctk.CTkLabel(s_box, text="Sheet Name:", font=ctk.CTkFont(size=12, weight="bold"), text_color=COLORS["text_dark"], width=90, anchor="w").pack(side="left")
+                ctk.CTkLabel(s_box, text=item['sheet'], font=ctk.CTkFont(size=12), text_color=COLORS["primary"], anchor="w").pack(side="left")
+                
+                c_box = ctk.CTkFrame(loc_frame, fg_color="transparent")
+                c_box.pack(fill="x", padx=15, pady=4)
+                ctk.CTkLabel(c_box, text="Cell Address:", font=ctk.CTkFont(size=12, weight="bold"), text_color=COLORS["text_dark"], width=90, anchor="w").pack(side="left")
+                ctk.CTkLabel(c_box, text=item['cell'], font=ctk.CTkFont(size=12, weight="bold"), text_color=COLORS["danger"], anchor="w").pack(side="left")
+                
+                v_box = ctk.CTkFrame(loc_frame, fg_color="transparent")
+                v_box.pack(fill="x", padx=15, pady=4)
+                ctk.CTkLabel(v_box, text="Static Value:", font=ctk.CTkFont(size=12, weight="bold"), text_color=COLORS["text_dark"], width=90, anchor="w").pack(side="left")
+                ctk.CTkLabel(v_box, text=f"'{item['value']}' (Hardcoded Bypass)", font=ctk.CTkFont(size=12, weight="bold"), text_color=COLORS["danger"], anchor="w").pack(side="left")
+                
+                desc_box = ctk.CTkFrame(loc_frame, fg_color="transparent")
+                desc_box.pack(fill="x", padx=15, pady=10)
+                ctk.CTkLabel(desc_box, text="Explanation: This cell evaluates to Pass/Fail but does not contain any formula. The user typed the string manually, which compromises report reliability.", font=ctk.CTkFont(size=10, slant="italic"), text_color=COLORS["text_muted"], wraplength=270, justify="left").pack(anchor="w")
+                
+                btn = ctk.CTkButton(loc_frame, text="📂 OPEN & FOCUS EXCEL CELL", height=45, fg_color=COLORS["primary"], hover_color=COLORS["primary_glow"], corner_radius=10,
+                                   font=ctk.CTkFont(size=13, weight="bold"), 
+                                   command=lambda p=item['full_path'], s=item['sheet'], c=item['cell']: self.open_excel_at_location(p, s, c))
+                btn.pack(fill="x", padx=15, pady=(10, 15))
 
     def open_excel_at_location(self, file_path, sheet_name, cell_address):
         """Mở tệp Excel và tự động chọn đúng Sheet + Cell bằng win32com (COM Automation).
@@ -764,35 +1013,58 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
 
         try:
             workbook = xlsxwriter.Workbook(file_path)
-            worksheet = workbook.add_worksheet("Audit Results")
             
-            header_fmt = workbook.add_format({'bold': True, 'bg_color': '#0F172A', 'font_color': 'white', 'border': 1, 'align': 'center'})
-            cell_fmt = workbook.add_format({'border': 1, 'align': 'center', 'valign': 'vcenter'})
-            group_fmt = workbook.add_format({'bold': True, 'bg_color': '#FEE2E2', 'font_color': '#991B1B', 'border': 1})
+            if self.current_mode == "IMAGE AUDIT":
+                worksheet = workbook.add_worksheet("Image Audit Results")
+                header_fmt = workbook.add_format({'bold': True, 'bg_color': '#0F172A', 'font_color': 'white', 'border': 1, 'align': 'center'})
+                cell_fmt = workbook.add_format({'border': 1, 'align': 'center', 'valign': 'vcenter'})
+                group_fmt = workbook.add_format({'bold': True, 'bg_color': '#FEE2E2', 'font_color': '#991B1B', 'border': 1})
 
-            headers = ["PREVIEW", "GROUP ID", "FILE NAME", "SHEET NAME", "CELL ADDRESS"]
-            for col, text in enumerate(headers):
-                worksheet.write(0, col, text, header_fmt)
-            
-            worksheet.set_column('A:A', 25)
-            worksheet.set_column('B:E', 25)
+                headers = ["PREVIEW", "GROUP ID", "FILE NAME", "SHEET NAME", "CELL ADDRESS"]
+                for col, text in enumerate(headers):
+                    worksheet.write(0, col, text, header_fmt)
+                
+                worksheet.set_column('A:A', 25)
+                worksheet.set_column('B:E', 25)
 
-            current_row = 1
-            for i, group in enumerate(self.duplicates_cache):
-                group_id = f"SET #{i+1}"
+                current_row = 1
+                for i, group in enumerate(self.duplicates_cache):
+                    group_id = f"SET #{i+1}"
+                    
+                    with zipfile.ZipFile(group[0]['full_path'], 'r') as z:
+                        img_data = z.read(group[0]['m_path'])
+                    img_io = io.BytesIO(img_data)
+                    
+                    worksheet.set_row(current_row, 120)
+                    worksheet.insert_image(current_row, 0, f"img_{i}.png", {'image_data': img_io, 'x_scale': 0.2, 'y_scale': 0.2, 'x_offset': 5, 'y_offset': 5})
+                    
+                    for j, loc in enumerate(group):
+                        worksheet.write(current_row, 1, group_id, group_fmt if j==0 else cell_fmt)
+                        worksheet.write(current_row, 2, loc['file'], cell_fmt)
+                        worksheet.write(current_row, 3, loc['sheet'], cell_fmt)
+                        worksheet.write(current_row, 4, loc['cell'], cell_fmt)
+                        current_row += 1
+            else:
+                worksheet = workbook.add_worksheet("Formula Audit Results")
+                header_fmt = workbook.add_format({'bold': True, 'bg_color': '#0F172A', 'font_color': 'white', 'border': 1, 'align': 'center'})
+                cell_fmt = workbook.add_format({'border': 1, 'align': 'center', 'valign': 'vcenter'})
+                fail_fmt = workbook.add_format({'bold': True, 'bg_color': '#FEE2E2', 'font_color': '#991B1B', 'border': 1, 'align': 'center'})
+                pass_fmt = workbook.add_format({'bold': True, 'bg_color': '#D1FAE5', 'font_color': '#065F46', 'border': 1, 'align': 'center'})
+
+                headers = ["FILE NAME", "SHEET NAME", "CELL ADDRESS", "HARDCODED VALUE", "ISSUE TYPE"]
+                for col, text in enumerate(headers):
+                    worksheet.write(0, col, text, header_fmt)
                 
-                with zipfile.ZipFile(group[0]['full_path'], 'r') as z:
-                    img_data = z.read(group[0]['m_path'])
-                img_io = io.BytesIO(img_data)
-                
-                worksheet.set_row(current_row, 120)
-                worksheet.insert_image(current_row, 0, f"img_{i}.png", {'image_data': img_io, 'x_scale': 0.2, 'y_scale': 0.2, 'x_offset': 5, 'y_offset': 5})
-                
-                for j, loc in enumerate(group):
-                    worksheet.write(current_row, 1, group_id, group_fmt if j==0 else cell_fmt)
-                    worksheet.write(current_row, 2, loc['file'], cell_fmt)
-                    worksheet.write(current_row, 3, loc['sheet'], cell_fmt)
-                    worksheet.write(current_row, 4, loc['cell'], cell_fmt)
+                worksheet.set_column('A:E', 25)
+
+                current_row = 1
+                for item in self.duplicates_cache:
+                    val_fmt = pass_fmt if item['value'].strip().upper() == "PASS" else fail_fmt
+                    worksheet.write(current_row, 0, item['file'], cell_fmt)
+                    worksheet.write(current_row, 1, item['sheet'], cell_fmt)
+                    worksheet.write(current_row, 2, item['cell'], cell_fmt)
+                    worksheet.write(current_row, 3, item['value'], val_fmt)
+                    worksheet.write(current_row, 4, item['type'], cell_fmt)
                     current_row += 1
 
             workbook.close()
@@ -817,19 +1089,19 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
 
         ctk.CTkLabel(scroll, text="🇻🇳 HƯỚNG DẪN SỬ DỤNG", font=ctk.CTkFont(size=18, weight="bold"), text_color=COLORS["primary"]).pack(anchor="w", pady=(0,10))
         vn_text = (
-            "1. CHỌN DỮ LIỆU: Nhấn 'SELECT DATA SOURCE' hoặc kéo thả các file Excel (.xlsx) trực tiếp vào ứng dụng.\n\n"
-            "2. LOẠI TRỪ SHEET: Nhấn biểu tượng 🔍 cạnh ô nhập liệu để hiện danh sách toàn bộ Sheet và tích chọn những Sheet mẫu cần bỏ qua.\n\n"
-            "3. THỰC HIỆN: Nhấn 'EXECUTE AUDIT'. Hệ thống sử dụng AI Vision (pHash) kết hợp SQLite Database để quét hàng nghìn file siêu tốc.\n\n"
-            "4. KẾT QUẢ: Xem danh sách ảnh lỗi. Nhấn 'VIEW FILE' để mở tệp Excel gốc hoặc 'EXPORT REPORT' để lưu báo cáo tổng hợp có kèm ảnh xem trước."
+            "1. CHỌN CHẾ ĐỘ QUÉT: Tại 'AUDIT MODE', nhấp chọn 'IMAGE AUDIT' để tìm ảnh trùng lặp hoặc 'FORMULA AUDIT' để phát hiện các ô nhập Pass/Fail thủ công.\n\n"
+            "2. CHỌN DỮ LIỆU: Nhấn 'SELECT DATA SOURCE' hoặc kéo thả các file Excel (.xlsx) trực tiếp vào ứng dụng.\n\n"
+            "3. THỰC HIỆN: Nhấn 'EXECUTE AUDIT' để ứng dụng tiến hành phân tích siêu tốc.\n\n"
+            "4. ĐỊNH VỊ SÂU: Nhấp chuột vào dòng chi tiết, bảng điều khiển bên phải sẽ cung cấp thông tin và nút 'OPEN'/'OPEN EXCEL FILE' để tự động mở tệp Excel và bôi đen tiêu điểm vào đúng ô tọa độ!"
         )
         ctk.CTkLabel(scroll, text=vn_text, font=ctk.CTkFont(size=13), justify="left", wraplength=520, text_color=COLORS["text_dark"]).pack(anchor="w", pady=(0,30))
 
         ctk.CTkLabel(scroll, text="🇺🇸 USER GUIDE", font=ctk.CTkFont(size=18, weight="bold"), text_color=COLORS["secondary"]).pack(anchor="w", pady=(0,10))
         en_text = (
-            "1. SELECT DATA: Click 'SELECT DATA SOURCE' or drag and drop Excel files (.xlsx) into the app.\n\n"
-            "2. EXCLUDE SHEETS: Click the 🔍 icon to browse all sheet names and check the ones you want to skip.\n\n"
-            "3. EXECUTE: Click 'EXECUTE AUDIT'. The system uses AI Vision with SQLite cache for unlimited scalability.\n\n"
-            "4. RESULTS: View issues. Click 'VIEW FILE' to open source Excel or 'EXPORT REPORT' to save a summary report with image previews."
+            "1. SELECT AUDIT MODE: At 'AUDIT MODE', choose 'IMAGE AUDIT' to detect duplicate images or 'FORMULA AUDIT' to discover manual Pass/Fail cells.\n\n"
+            "2. SELECT DATA: Click 'SELECT DATA SOURCE' or drag and drop Excel files (.xlsx) into the app.\n\n"
+            "3. EXECUTE: Click 'EXECUTE AUDIT' to trigger the fast audit processor.\n\n"
+            "4. DEEP FOCUS: Click any result item, and the right panel will show details along with 'OPEN'/'OPEN EXCEL FILE' buttons to automatically launch Excel and focus exact coordinates!"
         )
         ctk.CTkLabel(scroll, text=en_text, font=ctk.CTkFont(size=13), justify="left", wraplength=520, text_color=COLORS["text_dark"]).pack(anchor="w")
         ctk.CTkButton(guide_win, text="CLOSE / ĐÓNG", command=guide_win.destroy, fg_color=COLORS["sidebar_primary"], corner_radius=10).pack(pady=20)
