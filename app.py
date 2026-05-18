@@ -422,10 +422,15 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
         self.sidebar.pack_propagate(False)
         
         branding = ctk.CTkFrame(self.sidebar, fg_color="transparent")
-        branding.pack(pady=(30, 30), padx=25, fill="x")
+        branding.pack(pady=(30, 20), padx=25, fill="x")
         
-        ctk.CTkLabel(branding, text="DUP-", font=ctk.CTkFont(size=24, weight="bold"), text_color=COLORS["white"]).pack(side="left")
-        ctk.CTkLabel(branding, text="SEEKER", font=ctk.CTkFont(size=24, weight="bold"), text_color=COLORS["primary"]).pack(side="left")
+        title_f = ctk.CTkFrame(branding, fg_color="transparent")
+        title_f.pack(anchor="w")
+        ctk.CTkLabel(title_f, text="DUP-", font=ctk.CTkFont(size=24, weight="bold"), text_color=COLORS["white"]).pack(side="left")
+        ctk.CTkLabel(title_f, text="SEEKER", font=ctk.CTkFont(size=24, weight="bold"), text_color=COLORS["primary"]).pack(side="left")
+        
+        # Elegant developer subtitle right below the title name
+        ctk.CTkLabel(branding, text="developed by ductai.nguyen", font=ctk.CTkFont(size=10, slant="italic"), text_color=COLORS["text_muted"]).pack(anchor="w", pady=(2, 0))
 
         self.btn_guide = ctk.CTkButton(self.sidebar, text="HELP / HƯỚNG DẪN 💡", fg_color="transparent", hover_color=COLORS["sidebar_accent"],
                                        border_width=1, border_color=COLORS["sidebar_accent"], font=ctk.CTkFont(size=12, weight="bold"),
@@ -485,8 +490,6 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
         self.progress = ctk.CTkProgressBar(self.sidebar, progress_color=COLORS["primary"], height=8, corner_radius=4)
         self.progress.pack(side="bottom", pady=(0, 20), padx=30, fill="x")
         self.progress.set(0)
-        
-        ctk.CTkLabel(self.sidebar, text="Developed by ductai.nguyen", font=ctk.CTkFont(size=10), text_color=COLORS["text_muted"]).pack(side="bottom", pady=(0, 10))
 
     def _draw_main(self):
         self.main_view = ctk.CTkFrame(self, fg_color="transparent")
