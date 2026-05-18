@@ -452,20 +452,19 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
         self.file_count_lbl.pack(pady=5)
 
         config_box = ctk.CTkFrame(self.sidebar, fg_color="transparent")
-        config_box.pack(pady=25, padx=25, fill="x")
+        config_box.pack(pady=20, padx=25, fill="x")
         
         ctk.CTkLabel(config_box, text="EXCLUSION SETS", font=ctk.CTkFont(size=10, weight="bold"), text_color=COLORS["text_muted"]).pack(anchor="w", pady=(0,8))
         
-        entry_f = ctk.CTkFrame(config_box, fg_color="transparent")
-        entry_f.pack(fill="x")
+        self.btn_browse_sheets = ctk.CTkButton(config_box, text="🔍 SELECT SHEETS TO IGNORE", fg_color=COLORS["sidebar_accent"], hover_color=COLORS["primary"],
+                                              border_width=1, border_color=COLORS["sidebar_accent"], font=ctk.CTkFont(size=11, weight="bold"),
+                                              height=40, corner_radius=10, command=self.show_sheet_selector)
+        self.btn_browse_sheets.pack(fill="x")
         
-        self.entry_ignore = ctk.CTkEntry(entry_f, textvariable=self.ignore_sheets_str, fg_color=COLORS["sidebar_accent"], border_color=COLORS["sidebar_accent"],
-                                        height=35, corner_radius=10, text_color=COLORS["white"])
-        self.entry_ignore.pack(side="left", fill="x", expand=True, padx=(0, 5))
-        
-        self.btn_browse_sheets = ctk.CTkButton(entry_f, text="🔍", width=35, height=35, fg_color=COLORS["sidebar_accent"], hover_color=COLORS["primary"],
-                                              command=self.show_sheet_selector)
-        self.btn_browse_sheets.pack(side="right")
+        self.ignored_sheets_lbl = ctk.CTkLabel(config_box, text="Ignoring: Sheet1, Cosmetic, Critical Part", text_color=COLORS["text_muted"],
+                                               font=ctk.CTkFont(size=10, slant="italic"), justify="left", wraplength=230)
+        self.ignored_sheets_lbl.pack(anchor="w", pady=(5, 0))
+        self.update_ignored_sheets_label()
 
         self.btn_export = ctk.CTkButton(self.sidebar, text="EXPORT REPORT (XLSX)", command=self.export_report, height=45, fg_color=COLORS["secondary"], hover_color="#4F46E5",
                                        font=ctk.CTkFont(size=13, weight="bold"), corner_radius=12, state="disabled")
@@ -1035,6 +1034,13 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
                 "inconsistencies": filtered_inc
             }
             self.render_results(filtered_results, self.m_total.cget("text"))
+
+    def update_ignored_sheets_label(self):
+        val = self.ignore_sheets_str.get().strip()
+        if val:
+            self.ignored_sheets_lbl.configure(text=f"Ignoring: {val}")
+        else:
+            self.ignored_sheets_lbl.configure(text="No sheets ignored (All sheets scanned)")
 
     def on_tree_select(self, event):
         selected_item = self.tree.selection()
@@ -1755,6 +1761,7 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
         def apply_selection():
             selected = [s for s, v in checkboxes.items() if v.get()]
             self.ignore_sheets_str.set(", ".join(selected))
+            self.update_ignored_sheets_label()
             selector.destroy()
             
         ctk.CTkButton(selector, text="APPLY / XÁC NHẬN", command=apply_selection, fg_color=COLORS["primary"], corner_radius=10).pack(pady=20)
