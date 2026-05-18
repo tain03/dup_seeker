@@ -475,6 +475,10 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
                                         font=ctk.CTkFont(size=13, weight="bold"), corner_radius=12)
         self.btn_protect.pack(pady=(15, 0), padx=30, fill="x")
 
+        self.btn_unprotect = ctk.CTkButton(self.sidebar, text="🔓 UNPROTECT FORMULAS", command=self.unprotect_selected_files, height=45, fg_color="#475569", hover_color="#334155",
+                                          font=ctk.CTkFont(size=13, weight="bold"), corner_radius=12)
+        self.btn_unprotect.pack(pady=(10, 0), padx=30, fill="x")
+
         self.btn_scan = ctk.CTkButton(self.sidebar, text="EXECUTE AUDIT", command=self.start_scan, height=50, fg_color=COLORS["success"], hover_color="#047857",
                                      font=ctk.CTkFont(size=15, weight="bold"), corner_radius=12)
         self.btn_scan.pack(side="bottom", pady=30, padx=25, fill="x")
@@ -508,9 +512,24 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
         self.content_frame.grid_columnconfigure(1, weight=3)
         self.content_frame.grid_rowconfigure(0, weight=1)
 
-        # Left Panel (Treeview)
+        # Left Panel (Treeview with Filter Box)
         self.list_frame = ctk.CTkFrame(self.content_frame, fg_color=COLORS["white"], corner_radius=10, border_width=1, border_color=COLORS["border"])
         self.list_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
+        
+        # Search / Filter Bar Frame (Glassmorphism inspired background)
+        filter_frame = ctk.CTkFrame(self.list_frame, fg_color="#F1F5F9", corner_radius=8, height=40)
+        filter_frame.pack(fill="x", padx=15, pady=(15, 8))
+        filter_frame.pack_propagate(False)
+        
+        ctk.CTkLabel(filter_frame, text="🔍", font=ctk.CTkFont(size=14), text_color=COLORS["text_muted"]).pack(side="left", padx=(12, 5))
+        
+        self.filter_var = tk.StringVar()
+        self.filter_var.trace_add("write", self.filter_treeview)
+        
+        self.filter_entry = ctk.CTkEntry(filter_frame, textvariable=self.filter_var, placeholder_text="Search / Lọc nhanh theo tên tệp hoặc sheet...",
+                                         fg_color="transparent", border_width=0, text_color=COLORS["text_dark"],
+                                         placeholder_text_color=COLORS["text_muted"], font=ctk.CTkFont(size=12))
+        self.filter_entry.pack(side="left", fill="both", expand=True, padx=(0, 10))
         
         self.tree_scroll_y = ttk.Scrollbar(self.list_frame, orient="vertical")
         self.tree_scroll_y.pack(side="right", fill="y", pady=10, padx=(0, 5))
@@ -963,6 +982,59 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
                     self.tree.item(child, open=True)
                     
         self._reset_state()
+
+    def filter_treeview(self, *args):
+        query = self.filter_var.get().strip().lower()
+        if not self.duplicates_cache:
+            return
+            
+        if self.current_mode == "IMAGE AUDIT":
+            if not query:
+                self.render_results(self.duplicates_cache, self.m_total.cget("text"))
+                return
+                
+            filtered_duplicates = []
+            for group in self.duplicates_cache:
+                filtered_group = []
+                for loc in group:
+                    if query in loc['file'].lower() or query in loc['sheet'].lower() or query in loc['cell'].lower():
+                        filtered_group.append(loc)
+                if filtered_group:
+                    # Keep entire group if there is a match in this group, so user can see all associated duplicate files
+                    filtered_duplicates.append(group)
+                    
+            self.render_results(filtered_duplicates, self.m_total.cget("text"))
+        else:
+            if not query:
+                self.render_results(self.duplicates_cache, self.m_total.cget("text"))
+                return
+                
+            hardcoded_violations = self.duplicates_cache.get("hardcoded", [])
+            inconsistencies = self.duplicates_cache.get("inconsistencies", [])
+            
+            filtered_hc = []
+            for item in hardcoded_violations:
+                if query in item['file'].lower() or query in item['sheet'].lower() or query in item['cell'].lower() or query in str(item['value']).lower():
+                    filtered_hc.append(item)
+                    
+            filtered_inc = []
+            for inc in inconsistencies:
+                match_group = False
+                if query in inc['sheet'].lower() or query in inc['cell'].lower() or query in inc['coordinate'].lower():
+                    match_group = True
+                else:
+                    for f_path, f_detail in inc['files'].items():
+                        if query in f_detail['file'].lower() or query in str(f_detail['value']).lower():
+                            match_group = True
+                            break
+                if match_group:
+                    filtered_inc.append(inc)
+                    
+            filtered_results = {
+                "hardcoded": filtered_hc,
+                "inconsistencies": filtered_inc
+            }
+            self.render_results(filtered_results, self.m_total.cget("text"))
 
     def on_tree_select(self, event):
         selected_item = self.tree.selection()
@@ -1686,6 +1758,84 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
             selector.destroy()
             
         ctk.CTkButton(selector, text="APPLY / XÁC NHẬN", command=apply_selection, fg_color=COLORS["primary"], corner_radius=10).pack(pady=20)
+
+    def unprotect_selected_files(self):
+        if not self.selected_files:
+            messagebox.showwarning("Warning", "Vui lòng chọn file Excel trước / Please select Excel files first.")
+            return
+            
+        confirm = messagebox.askyesno("🔓 Unprotect Worksheet Formulas", 
+            "Chức năng này sẽ quét toàn bộ các trang tính trong các tệp Excel đang chọn, tự động GIẢI PHÓNG bảo vệ (Unprotect) sử dụng mật khẩu là '1'.\n\nBạn có chắc chắn muốn thực hiện mở khóa đồng loạt?")
+        if not confirm:
+            return
+            
+        self.btn_unprotect.configure(state="disabled", text="🔓 UNPROTECTING...")
+        self.progress.set(0.05)
+        threading.Thread(target=self.unprotect_files_thread, daemon=True).start()
+
+    def unprotect_files_thread(self):
+        import win32com.client
+        import pythoncom
+        
+        pythoncom.CoInitialize() # Khởi tạo COM cho tiểu trình phụ
+        
+        excel = None
+        try:
+            excel = win32com.client.Dispatch("Excel.Application")
+            excel.Visible = False
+            excel.DisplayAlerts = False
+        except Exception as e:
+            self.after(0, lambda: messagebox.showerror("COM Error", f"Không thể khởi chạy Microsoft Excel: {e}"))
+            self.after(0, lambda: self.btn_unprotect.configure(state="normal", text="🔓 UNPROTECT FORMULAS"))
+            self.after(0, lambda: self.progress.set(0))
+            pythoncom.CoUninitialize()
+            return
+            
+        success_count = 0
+        error_files = []
+        
+        for idx, file_path in enumerate(self.selected_files):
+            try:
+                abs_path = os.path.abspath(file_path)
+                wb = excel.Workbooks.Open(abs_path)
+                
+                for ws in wb.Sheets:
+                    try:
+                        # Hủy bảo vệ trang tính sử dụng mật khẩu '1'
+                        ws.Unprotect(Password="1")
+                    except Exception as e:
+                        print(f"Error unprotecting sheet {ws.Name} in {Path(file_path).name}: {e}")
+                        
+                wb.Close(SaveChanges=True)
+                success_count += 1
+            except Exception as e:
+                error_files.append(Path(file_path).name)
+                print(f"Error opening/saving {file_path}: {e}")
+                
+            progress_val = 0.05 + (idx + 1) / len(self.selected_files) * 0.9
+            self.after(0, lambda p=progress_val: self.progress.set(p))
+            
+        try:
+            excel.Quit()
+        except Exception:
+            pass
+            
+        pythoncom.CoUninitialize()
+        
+        def show_result():
+            self.progress.set(1.0)
+            self.btn_unprotect.configure(state="normal", text="🔓 UNPROTECT FORMULAS")
+            
+            if error_files:
+                messagebox.showwarning("Unprotection Complete", 
+                    f"Đã hủy bảo vệ thành công {success_count} tệp.\n\nKhông thể hủy bảo vệ các tệp sau (có thể do sai mật khẩu):\n" + "\n".join(error_files))
+            else:
+                messagebox.showinfo("🔓 Unprotection Success", 
+                    f"Đã hủy bảo vệ thành công toàn bộ {success_count} tệp Excel!\n\n"
+                    "- Tất cả các trang tính hiện đã được mở khóa chỉnh sửa tự do.")
+            self.progress.set(0)
+            
+        self.after(0, show_result)
 
 if __name__ == "__main__":
     # Rất quan trọng khi sử dụng ProcessPoolExecutor trong ứng dụng PyInstaller trên Windows
