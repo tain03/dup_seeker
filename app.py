@@ -471,6 +471,10 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
                                        font=ctk.CTkFont(size=13, weight="bold"), corner_radius=12, state="disabled")
         self.btn_export.pack(pady=(20, 0), padx=30, fill="x")
 
+        self.btn_protect = ctk.CTkButton(self.sidebar, text="🛡️ PROTECT FORMULAS", command=self.protect_selected_files, height=45, fg_color="#D97706", hover_color="#B45309",
+                                        font=ctk.CTkFont(size=13, weight="bold"), corner_radius=12)
+        self.btn_protect.pack(pady=(15, 0), padx=30, fill="x")
+
         self.btn_scan = ctk.CTkButton(self.sidebar, text="EXECUTE AUDIT", command=self.start_scan, height=50, fg_color=COLORS["success"], hover_color="#047857",
                                      font=ctk.CTkFont(size=15, weight="bold"), corner_radius=12)
         self.btn_scan.pack(side="bottom", pady=30, padx=25, fill="x")
@@ -1484,6 +1488,104 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
         )
         ctk.CTkLabel(scroll, text=en_text, font=ctk.CTkFont(size=13), justify="left", wraplength=520, text_color=COLORS["text_dark"]).pack(anchor="w")
         ctk.CTkButton(guide_win, text="CLOSE / ĐÓNG", command=guide_win.destroy, fg_color=COLORS["sidebar_primary"], corner_radius=10).pack(pady=20)
+
+    def protect_selected_files(self):
+        if not self.selected_files:
+            messagebox.showwarning("Warning", "Vui lòng chọn file Excel trước / Please select Excel files first.")
+            return
+            
+        confirm = messagebox.askyesno("🛡️ Lock & Protect Formulas", 
+            "Chức năng này sẽ quét toàn bộ các trang tính trong các tệp Excel đang chọn, tự động KHÓA CỨNG tất cả các ô công thức, MỞ KHÓA tất cả các ô nhập liệu thủ công, và bảo vệ trang tính với mật khẩu là '1'.\n\nBạn có chắc chắn muốn thực hiện?")
+        if not confirm:
+            return
+            
+        self.btn_protect.configure(state="disabled", text="🛡️ PROTECTING...")
+        self.progress.set(0.05)
+        threading.Thread(target=self.protect_files_thread, daemon=True).start()
+
+    def protect_files_thread(self):
+        import win32com.client
+        import pythoncom
+        
+        pythoncom.CoInitialize() # Khởi tạo COM cho tiểu trình phụ
+        
+        excel = None
+        try:
+            excel = win32com.client.Dispatch("Excel.Application")
+            excel.Visible = False
+            excel.DisplayAlerts = False
+        except Exception as e:
+            self.after(0, lambda: messagebox.showerror("COM Error", f"Không thể khởi chạy Microsoft Excel: {e}"))
+            self.after(0, lambda: self.btn_protect.configure(state="normal", text="🛡️ PROTECT FORMULAS"))
+            self.after(0, lambda: self.progress.set(0))
+            pythoncom.CoUninitialize()
+            return
+            
+        success_count = 0
+        error_files = []
+        
+        for idx, file_path in enumerate(self.selected_files):
+            try:
+                abs_path = os.path.abspath(file_path)
+                wb = excel.Workbooks.Open(abs_path)
+                
+                for ws in wb.Sheets:
+                    try:
+                        # 1. Bỏ bảo vệ trang tính nếu đang bảo vệ trước đó với mật khẩu '1'
+                        try:
+                            ws.Unprotect(Password="1")
+                        except Exception:
+                            pass
+                            
+                        # 2. Mở khóa toàn bộ ô để người dùng nhập liệu thô tự do
+                        ws.Cells.Locked = False
+                        
+                        # 3. Quét tìm và chỉ khóa cứng các ô chứa công thức sử dụng SpecialCells
+                        try:
+                            # xlCellTypeFormulas = -4123
+                            formula_cells = ws.Cells.SpecialCells(-4123)
+                            formula_cells.Locked = True
+                        except Exception:
+                            # Sheet không có ô công thức nào
+                            pass
+                            
+                        # 4. Kích hoạt bảo vệ sheet với mật khẩu '1', cho phép chỉnh sửa hình vẽ/ảnh (DrawingObjects=False)
+                        ws.Protect(Password="1", DrawingObjects=False, Contents=True, Scenarios=True)
+                    except Exception as e:
+                        print(f"Error protecting sheet {ws.Name} in {Path(file_path).name}: {e}")
+                        
+                wb.Close(SaveChanges=True)
+                success_count += 1
+            except Exception as e:
+                error_files.append(Path(file_path).name)
+                print(f"Error opening/saving {file_path}: {e}")
+                
+            progress_val = 0.05 + (idx + 1) / len(self.selected_files) * 0.9
+            self.after(0, lambda p=progress_val: self.progress.set(p))
+            
+        try:
+            excel.Quit()
+        except Exception:
+            pass
+            
+        pythoncom.CoUninitialize()
+        
+        def show_result():
+            self.progress.set(1.0)
+            self.btn_protect.configure(state="normal", text="🛡️ PROTECT FORMULAS")
+            
+            if error_files:
+                messagebox.showwarning("Protection Complete", 
+                    f"Đã bảo vệ thành công {success_count} tệp.\n\nKhông thể bảo vệ các tệp sau:\n" + "\n".join(error_files))
+            else:
+                messagebox.showinfo("🛡️ Protection Success", 
+                    f"Đã bảo vệ thành công toàn bộ {success_count} tệp Excel!\n\n"
+                    "- Tất cả các ô chứa công thức hiện đã được khóa cứng.\n"
+                    "- Các ô nhập liệu dữ liệu thô khác vẫn có thể chỉnh sửa tự do.\n"
+                    "- Mật khẩu để mở khóa bảo vệ (Unprotect) khi cần sửa công thức là: '1'")
+            self.progress.set(0)
+            
+        self.after(0, show_result)
 
     def show_sheet_selector(self):
         if not self.selected_files:
