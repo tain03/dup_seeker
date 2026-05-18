@@ -77,7 +77,8 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS hash_cache
                  (md5 TEXT PRIMARY KEY, phash TEXT)''')
     # CurrentScan: Bảng tạm thay thế cho mảng trong RAM
-    c.execute('''CREATE TABLE IF NOT EXISTS current_scan
+    c.execute('DROP TABLE IF EXISTS current_scan')
+    c.execute('''CREATE TABLE current_scan
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
                   full_path TEXT,
                   file_name TEXT,
@@ -85,7 +86,8 @@ def init_db():
                   cell TEXT,
                   m_path TEXT,
                   md5 TEXT,
-                  phash TEXT)''')
+                  phash TEXT,
+                  pic_name TEXT)''')
     c.execute('CREATE INDEX IF NOT EXISTS idx_md5 ON current_scan(md5)')
     c.execute('CREATE INDEX IF NOT EXISTS idx_phash ON current_scan(phash)')
     conn.commit()
@@ -157,6 +159,16 @@ class ExcelProcessor:
                             pos = anchor.find('dr:pos', NS)
                             cell_addr = f"Float({pos.get('x')},{pos.get('y')})"
 
+                        # Trích xuất tên hình ảnh (pic_name)
+                        pic_name = ""
+                        pic = anchor.find('.//dr:pic', NS)
+                        if pic is not None:
+                            nvPicPr = pic.find('dr:nvPicPr', NS)
+                            if nvPicPr is not None:
+                                cNvPr = nvPicPr.find('dr:cNvPr', NS)
+                                if cNvPr is not None:
+                                    pic_name = cNvPr.get('name') or ""
+
                         blip = anchor.find('.//a:blip', NS)
                         if blip is not None:
                             r_id = blip.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed')
@@ -171,7 +183,8 @@ class ExcelProcessor:
                                     "sheet": s_real_name,
                                     "cell": cell_addr,
                                     "m_path": m_path,
-                                    "md5": md5_hash
+                                    "md5": md5_hash,
+                                    "pic_name": pic_name
                                 })
         except Exception:
             pass
@@ -657,8 +670,8 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
                     for future in as_completed(future_to_file):
                         metadata_list = future.result()
                         if metadata_list:
-                            c.executemany('''INSERT INTO current_scan (full_path, file_name, sheet, cell, m_path, md5)
-                                             VALUES (:full_path, :file, :sheet, :cell, :m_path, :md5)''', metadata_list)
+                            c.executemany('''INSERT INTO current_scan (full_path, file_name, sheet, cell, m_path, md5, pic_name)
+                                             VALUES (:full_path, :file, :sheet, :cell, :m_path, :md5, :pic_name)''', metadata_list)
                             conn.commit()
                         processed_files += 1
                         self.after(0, lambda p=processed_files: self.progress.set(p / len(self.selected_files) * 0.4))
@@ -699,7 +712,7 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
                 
                 duplicates = []
                 for p_hash in duplicate_phashes:
-                    c.execute('''SELECT file_name, full_path, sheet, cell, m_path 
+                    c.execute('''SELECT file_name, full_path, sheet, cell, m_path, pic_name 
                                  FROM current_scan WHERE phash = ?''', (p_hash,))
                     locs = []
                     for row in c.fetchall():
@@ -708,7 +721,8 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
                             'full_path': row[1],
                             'sheet': row[2],
                             'cell': row[3],
-                            'm_path': row[4]
+                            'm_path': row[4],
+                            'pic_name': row[5]
                         })
                     duplicates.append(locs)
                     
@@ -1014,7 +1028,7 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
                     c3_frame = ctk.CTkFrame(grid_container, fg_color=bg_color, corner_radius=0)
                     c3_frame.grid(row=r, column=3, sticky="nsew", padx=1, pady=1)
                     btn = ctk.CTkButton(c3_frame, text="OPEN", width=50, height=22, fg_color=COLORS["secondary"], hover_color=COLORS["primary"], corner_radius=4,
-                                       font=ctk.CTkFont(size=9, weight="bold"), command=lambda p=loc['full_path'], s=loc['sheet'], c=loc['cell']: self.open_excel_at_location(p, s, c))
+                                       font=ctk.CTkFont(size=9, weight="bold"), command=lambda p=loc['full_path'], s=loc['sheet'], c=loc['cell'], pic=loc.get('pic_name'): self.open_excel_at_location(p, s, c, pic))
                     btn.pack(padx=5, pady=4)
             else:
                 loc = data["loc"]
@@ -1045,7 +1059,7 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
                 
                 btn = ctk.CTkButton(loc_frame, text="📂 OPEN EXCEL FILE", height=45, fg_color=COLORS["primary"], hover_color=COLORS["primary_glow"], corner_radius=10,
                                    font=ctk.CTkFont(size=13, weight="bold"), 
-                                   command=lambda p=loc['full_path'], s=loc['sheet'], c=loc['cell']: self.open_excel_at_location(p, s, c))
+                                   command=lambda p=loc['full_path'], s=loc['sheet'], c=loc['cell'], pic=loc.get('pic_name'): self.open_excel_at_location(p, s, c, pic))
                 btn.pack(fill="x", padx=15, pady=(20, 15))
         else:
             self.preview_img_lbl.configure(image="", text="⚠️ FORMULA INTEGRITY ALERT", text_color=COLORS["danger"])
@@ -1238,9 +1252,9 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
                                    command=lambda p=f_detail['full_path'], s=coord_info['sheet'], c=coord_info['cell']: self.open_excel_at_location(p, s, c))
                 btn.pack(fill="x", padx=15, pady=(10, 15))
 
-    def open_excel_at_location(self, file_path, sheet_name, cell_address):
-        """Mở tệp Excel và tự động chọn đúng Sheet + Cell bằng win32com (COM Automation).
-           Nếu máy không hỗ trợ win32com, hệ thống sẽ tự động hạ cấp xuống os.startfile (mở file cơ bản)."""
+    def open_excel_at_location(self, file_path, sheet_name, cell_address, pic_name=None):
+        """Mở tệp Excel và tự động chọn đúng Sheet + Cell/Shape chứa ảnh trùng bằng win32com.
+           Nếu máy không hỗ trợ win32com, hệ thống sẽ tự động hạ cấp xuống os.startfile."""
         try:
             import win32com.client
             abs_path = os.path.abspath(file_path)
@@ -1273,9 +1287,52 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
             except Exception:
                 pass
                 
-            # Chọn (Focus) vào đúng ô Cell chứa ảnh
+            # Chọn (Focus) vào đúng ô Cell hoặc Shape chứa ảnh
             try:
+                found_shape = False
+                
+                # Biến đổi địa chỉ ô về chuẩn địa chỉ tuyệt đối của Excel (ví dụ $B$3)
+                target_address = None
                 if cell_address and cell_address != "N/A" and not cell_address.startswith("Float"):
+                    try:
+                        target_address = ws.Range(cell_address).Address
+                    except Exception:
+                        pass
+                
+                # 1. Thử tìm bằng Shape có vị trí TopLeftCell trùng khớp với ô Range
+                if target_address:
+                    try:
+                        for shape in ws.Shapes:
+                            try:
+                                if shape.TopLeftCell.Address == target_address:
+                                    shape.Select()
+                                    found_shape = True
+                                    break
+                            except Exception:
+                                pass
+                    except Exception:
+                        pass
+                
+                # 2. Thử tìm bằng pic_name nếu có
+                if not found_shape and pic_name:
+                    try:
+                        ws.Shapes(pic_name).Select()
+                        found_shape = True
+                    except Exception:
+                        pass
+                        
+                    if not found_shape:
+                        try:
+                            for shape in ws.Shapes:
+                                if shape.Name.lower() == pic_name.lower():
+                                    shape.Select()
+                                    found_shape = True
+                                    break
+                        except Exception:
+                            pass
+                
+                # 3. Fallback: Nếu không tìm thấy Shape, chọn ô Range thông thường
+                if not found_shape and cell_address and cell_address != "N/A" and not cell_address.startswith("Float"):
                     ws.Range(cell_address).Select()
             except Exception:
                 pass
@@ -1286,7 +1343,7 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
             except Exception:
                 pass
         except Exception:
-            # Fallback về mở file mặc định nếu có bất cứ lỗi gì xảy ra (ví dụ: máy không cài Excel hoặc thiếu thư viện)
+            # Fallback về mở file mặc định nếu có bất cứ lỗi gì xảy ra
             try:
                 os.startfile(file_path)
             except Exception:
