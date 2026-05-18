@@ -1549,8 +1549,9 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
                             # Sheet không có ô công thức nào
                             pass
                             
-                        # 4. Kích hoạt bảo vệ sheet với mật khẩu '1', cho phép chỉnh sửa hình vẽ/ảnh (DrawingObjects=False)
-                        ws.Protect(Password="1", DrawingObjects=False, Contents=True, Scenarios=True)
+                        # 4. Kích hoạt bảo vệ sheet với mật khẩu '1', cho phép chỉnh sửa hình vẽ/ảnh và định dạng ô/cột/dòng
+                        ws.Protect(Password="1", DrawingObjects=False, Contents=True, Scenarios=True,
+                                   AllowFormattingCells=True, AllowFormattingColumns=True, AllowFormattingRows=True)
                     except Exception as e:
                         print(f"Error protecting sheet {ws.Name} in {Path(file_path).name}: {e}")
                         
