@@ -190,9 +190,10 @@ class ExcelProcessor:
 
     @staticmethod
     def extract_formula_integrity(file_path, ignore_sheets=None):
-        """Quét các ô trong tệp Excel để tìm ô chứa giá trị cứng Pass/Fail mà không dùng công thức"""
+        """Quét các ô trong tệp Excel để tìm ô chứa giá trị cứng Pass/Fail và ghi lại các công thức"""
         ignore_sheets = ignore_sheets or []
         results = []
+        formulas = {}
         try:
             with zipfile.ZipFile(file_path, 'r') as z:
                 # 1. Đọc tên sheet thực tế
@@ -240,8 +241,14 @@ class ExcelProcessor:
                         cell_addr = c_tag.get('r')
                         cell_type = c_tag.get('t')
                         
-                        has_formula = c_tag.find('sh:f', NS) is not None
+                        f_tag = c_tag.find('sh:f', NS)
+                        has_formula = f_tag is not None
                         if has_formula:
+                            formula_text = f_tag.text or ""
+                            # Chuẩn hóa công thức có dấu bằng ở đầu
+                            if formula_text and not formula_text.startswith("="):
+                                formula_text = f"={formula_text}"
+                            formulas[f"{s_name}!{cell_addr}"] = formula_text
                             continue
                         
                         v_tag = c_tag.find('sh:v', NS)
@@ -276,7 +283,7 @@ class ExcelProcessor:
                             })
         except Exception as e:
             print(f"Lỗi khi quét công thức tệp {Path(file_path).name}: {e}")
-        return results
+        return {"violations": results, "formulas": formulas}
 
 
 class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
@@ -644,22 +651,92 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
             else:
                 self.after(0, lambda: self.btn_scan.configure(text="[1/2] AUDITING FORMULAS..."))
                 processed_files = 0
-                all_results = []
+                violations_list = []
+                file_formulas = {}
+                file_violations = {}
                 
                 with ProcessPoolExecutor(max_workers=max(1, multiprocessing.cpu_count() - 1)) as executor:
                     future_to_file = {executor.submit(ExcelProcessor.extract_formula_integrity, f, ignore_list): f for f in self.selected_files}
                     for future in as_completed(future_to_file):
+                        file_path = future_to_file[future]
                         res = future.result()
                         if res:
-                            all_results.extend(res)
+                            v_list = res.get("violations", [])
+                            violations_list.extend(v_list)
+                            file_formulas[str(file_path)] = res.get("formulas", {})
+                            file_violations[str(file_path)] = {
+                                f"{v['sheet']}!{v['cell']}": v['value'] for v in v_list
+                            }
                         processed_files += 1
                         self.after(0, lambda p=processed_files: self.progress.set(p / len(self.selected_files) * 0.9))
                         
                 self.after(0, lambda: self.btn_scan.configure(text="[2/2] COMPILING RESULTS..."))
                 self.after(0, lambda: self.progress.set(0.95))
                 
-                self.duplicates_cache = all_results
-                self.after(0, lambda: self.render_results(all_results, len(all_results)))
+                # Tìm các tọa độ ô có công thức ở ít nhất một file để so sánh chéo
+                all_formula_coords = set()
+                for f_path, f_map in file_formulas.items():
+                    all_formula_coords.update(f_map.keys())
+                
+                inconsistencies = []
+                for coord in all_formula_coords:
+                    coord_details = {}
+                    distinct_states = set()
+                    
+                    for f_path in self.selected_files:
+                        f_path_str = str(f_path)
+                        f_name = Path(f_path).name
+                        
+                        f_map = file_formulas.get(f_path_str, {})
+                        v_map = file_violations.get(f_path_str, {})
+                        
+                        if coord in f_map:
+                            formula_text = f_map[coord]
+                            coord_details[f_path_str] = {
+                                "file": f_name,
+                                "full_path": f_path_str,
+                                "state": "formula",
+                                "value": formula_text
+                            }
+                            distinct_states.add(f"formula:{formula_text}")
+                        elif coord in v_map:
+                            val = v_map[coord]
+                            coord_details[f_path_str] = {
+                                "file": f_name,
+                                "full_path": f_path_str,
+                                "state": "hardcoded",
+                                "value": val
+                            }
+                            distinct_states.add("hardcoded")
+                        else:
+                            coord_details[f_path_str] = {
+                                "file": f_name,
+                                "full_path": f_path_str,
+                                "state": "missing",
+                                "value": "(No formula / Empty)"
+                            }
+                            distinct_states.add("missing")
+                            
+                    # Nếu có nhiều hơn 1 trạng thái công thức/giá trị tại cùng 1 vị trí thì là không đồng nhất
+                    if len(distinct_states) > 1:
+                        sheet_name, cell_addr = coord.split("!", 1)
+                        inconsistencies.append({
+                            "sheet": sheet_name,
+                            "cell": cell_addr,
+                            "coordinate": coord,
+                            "files": coord_details
+                        })
+                
+                combined_results = {
+                    "hardcoded": violations_list,
+                    "inconsistencies": inconsistencies
+                }
+                
+                self.duplicates_cache = combined_results
+                total_formulas_count = sum(len(f_map) for f_map in file_formulas.values())
+                total_scanned_count = total_formulas_count + len(violations_list)
+                
+                self.after(0, lambda: self.render_results(combined_results, total_scanned_count))
         except Exception as e:
             self.after(0, lambda e=e: messagebox.showerror("System Error", str(e)))
             self.after(0, self._reset_state)
@@ -712,42 +789,76 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
                 self.tree.column("Cell", width=cell_width, minwidth=80, anchor="center", stretch=True)
                 self.tree.column("Matches", width=matches_width, minwidth=100, anchor="center", stretch=True)
         else:
-            self.m_dups.configure(text=str(len(duplicates)))
+            hardcoded_violations = duplicates.get("hardcoded", [])
+            inconsistencies = duplicates.get("inconsistencies", [])
+            
+            total_issues = len(hardcoded_violations) + len(inconsistencies)
+            self.m_dups.configure(text=str(total_issues))
             self.m_total.configure(text=str(total_count))
             
-            if not duplicates:
+            if not hardcoded_violations and not inconsistencies:
                 self.btn_export.configure(state="disabled")
-                self.preview_img_lbl.configure(text="SYSTEM INTEGRITY VERIFIED - NO MANUAL PASS/FAIL DETECTED", text_color=COLORS["success"])
+                self.preview_img_lbl.configure(text="SYSTEM INTEGRITY VERIFIED - NO ISSUES DETECTED", text_color=COLORS["success"])
             else:
                 self.btn_export.configure(state="normal")
                 self.preview_img_lbl.configure(text="Select an item on the left to inspect", text_color=COLORS["text_muted"])
                 
-                max_tree_len = len("File Name")
+                max_tree_len = len("🔄 CROSS-FILE FORMULA INCONSISTENCIES")
                 max_sheet_len = len("Sheet Name")
                 max_cell_len = len("Cell Address")
-                max_matches_len = len("Hardcoded Value")
+                max_matches_len = len("Formula / Value")
                 
-                from collections import defaultdict
-                by_file = defaultdict(list)
-                for item in duplicates:
-                    by_file[item['file']].append(item)
+                # 1. Báo cáo ô trị tĩnh Pass/Fail
+                if hardcoded_violations:
+                    parent_hc_iid = "parent_hardcoded"
+                    self.tree.insert("", "end", iid=parent_hc_iid, text=f"⚠️ HARDCODED PASS/FAIL ({len(hardcoded_violations)} cells)", values=("", "", "Inspect"), tags=("group_row",))
+                    self.node_data[parent_hc_iid] = {"type": "hardcoded_root", "items": hardcoded_violations}
                     
-                for f_name, items in by_file.items():
-                    max_tree_len = max(max_tree_len, len(f_name))
-                    parent_iid = f"file_{f_name.replace(' ', '_')}"
-                    self.tree.insert("", "end", iid=parent_iid, text=f_name, values=("", "", f"{len(items)} cells"), tags=("group_row",))
-                    self.node_data[parent_iid] = {"type": "formula_file", "file": f_name, "items": items}
-                    
-                    for j, item in enumerate(items):
-                        child_iid = f"cell_{f_name.replace(' ', '_')}_{j}"
-                        row_tag = "even_row" if j % 2 == 0 else "odd_row"
-                        self.tree.insert(parent_iid, "end", iid=child_iid, text=f"Cell: {item['cell']} [{item['value']}]",
-                                         values=(item['sheet'], item['cell'], item['value']), tags=(row_tag,))
-                        self.node_data[child_iid] = {"type": "formula_cell", "item": item}
+                    from collections import defaultdict
+                    by_file = defaultdict(list)
+                    for item in hardcoded_violations:
+                        by_file[item['file']].append(item)
                         
-                        max_sheet_len = max(max_sheet_len, len(item['sheet']))
-                        max_cell_len = max(max_cell_len, len(item['cell']))
-                        max_matches_len = max(max_matches_len, len(item['value']))
+                    for f_idx, (f_name, items) in enumerate(by_file.items()):
+                        file_parent_iid = f"file_{f_name.replace(' ', '_')}"
+                        self.tree.insert(parent_hc_iid, "end", iid=file_parent_iid, text=f_name, values=("", "", f"{len(items)} cells"), tags=("group_row",))
+                        self.node_data[file_parent_iid] = {"type": "formula_file", "file": f_name, "items": items}
+                        
+                        for j, item in enumerate(items):
+                            child_iid = f"cell_{f_name.replace(' ', '_')}_{j}"
+                            row_tag = "even_row" if j % 2 == 0 else "odd_row"
+                            self.tree.insert(file_parent_iid, "end", iid=child_iid, text=f"Cell: {item['cell']} [{item['value']}]",
+                                             values=(item['sheet'], item['cell'], item['value']), tags=(row_tag,))
+                            self.node_data[child_iid] = {"type": "formula_cell", "item": item}
+                            
+                            max_sheet_len = max(max_sheet_len, len(item['sheet']))
+                            max_cell_len = max(max_cell_len, len(item['cell']))
+                            max_matches_len = max(max_matches_len, len(item['value']))
+                
+                # 2. Báo cáo không đồng nhất công thức
+                if inconsistencies:
+                    parent_inc_iid = "parent_inconsistency"
+                    self.tree.insert("", "end", iid=parent_inc_iid, text=f"🔄 FORMULA INCONSISTENCY ({len(inconsistencies)} coords)", values=("", "", "Inspect"), tags=("group_row",))
+                    self.node_data[parent_inc_iid] = {"type": "inconsistency_root", "items": inconsistencies}
+                    
+                    for idx, inc in enumerate(inconsistencies):
+                        coord_parent_iid = f"coord_{idx}"
+                        self.tree.insert(parent_inc_iid, "end", iid=coord_parent_iid, text=f"Coord: {inc['coordinate']}",
+                                         values=(inc['sheet'], inc['cell'], f"{len(inc['files'])} files"), tags=("group_row",))
+                        self.node_data[coord_parent_iid] = {"type": "inconsistency_group", "item": inc}
+                        
+                        for f_idx, (f_path, f_detail) in enumerate(inc['files'].items()):
+                            child_iid = f"inc_cell_{idx}_{f_idx}"
+                            row_tag = "even_row" if f_idx % 2 == 0 else "odd_row"
+                            state_desc = f"{f_detail['file']}: {f_detail['value']}"
+                            
+                            self.tree.insert(coord_parent_iid, "end", iid=child_iid, text=state_desc,
+                                             values=(inc['sheet'], inc['cell'], f_detail['state'].upper()), tags=(row_tag,))
+                            self.node_data[child_iid] = {"type": "inconsistency_cell", "coordinate": inc['coordinate'], "file_detail": f_detail, "coord_info": inc}
+                            
+                            max_sheet_len = max(max_sheet_len, len(inc['sheet']))
+                            max_cell_len = max(max_cell_len, len(inc['cell']))
+                            max_matches_len = max(max_matches_len, len(state_desc))
                 
                 tree_width = min(max(max_tree_len * 8 + 40, 250), 380)
                 sheet_width = min(max(max_sheet_len * 8 + 25, 120), 200)
@@ -870,7 +981,21 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
             self.preview_img_lbl.configure(image="", text="⚠️ FORMULA INTEGRITY ALERT", text_color=COLORS["danger"])
             for child in self.preview_details_scroll.winfo_children(): child.destroy()
             
-            if data["type"] == "formula_file":
+            if data["type"] == "hardcoded_root":
+                group_frame = ctk.CTkFrame(self.preview_details_scroll, fg_color=COLORS["bg_canvas"], corner_radius=12, border_width=1, border_color=COLORS["border"])
+                group_frame.pack(fill="both", expand=True, padx=5, pady=5)
+                ctk.CTkLabel(group_frame, text="HARDCODED PASS/FAIL", font=ctk.CTkFont(size=11, weight="bold"), text_color=COLORS["text_muted"]).pack(anchor="w", padx=15, pady=(15, 5))
+                ctk.CTkLabel(group_frame, text=f"Total violations: {len(data['items'])} cells", font=ctk.CTkFont(size=14, weight="bold"), text_color=COLORS["danger"]).pack(anchor="w", padx=15, pady=(0, 12))
+                ctk.CTkLabel(group_frame, text="Select a file or cell coordinate on the left for details and deep Excel navigation.", font=ctk.CTkFont(size=11), text_color=COLORS["text_dark"], justify="left", wraplength=270).pack(anchor="w", padx=15, pady=10)
+                
+            elif data["type"] == "inconsistency_root":
+                group_frame = ctk.CTkFrame(self.preview_details_scroll, fg_color=COLORS["bg_canvas"], corner_radius=12, border_width=1, border_color=COLORS["border"])
+                group_frame.pack(fill="both", expand=True, padx=5, pady=5)
+                ctk.CTkLabel(group_frame, text="FORMULA INCONSISTENCIES", font=ctk.CTkFont(size=11, weight="bold"), text_color=COLORS["text_muted"]).pack(anchor="w", padx=15, pady=(15, 5))
+                ctk.CTkLabel(group_frame, text=f"Total discrepancies: {len(data['items'])} coords", font=ctk.CTkFont(size=14, weight="bold"), text_color=COLORS["danger"]).pack(anchor="w", padx=15, pady=(0, 12))
+                ctk.CTkLabel(group_frame, text="Select a coordinate on the left to see the side-by-side formula mismatch grid across all workbooks.", font=ctk.CTkFont(size=11), text_color=COLORS["text_dark"], justify="left", wraplength=270).pack(anchor="w", padx=15, pady=10)
+                
+            elif data["type"] == "formula_file":
                 f_name = data["file"]
                 items = data["items"]
                 
@@ -915,7 +1040,8 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
                     btn = ctk.CTkButton(c3_frame, text="OPEN", width=50, height=22, fg_color=COLORS["secondary"], hover_color=COLORS["primary"], corner_radius=4,
                                        font=ctk.CTkFont(size=9, weight="bold"), command=lambda p=item['full_path'], s=item['sheet'], c=item['cell']: self.open_excel_at_location(p, s, c))
                     btn.pack(padx=5, pady=4)
-            else:
+                    
+            elif data["type"] == "formula_cell":
                 item = data["item"]
                 
                 loc_frame = ctk.CTkFrame(self.preview_details_scroll, fg_color=COLORS["bg_canvas"], corner_radius=12, border_width=1, border_color=COLORS["border"])
@@ -950,6 +1076,96 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
                 btn = ctk.CTkButton(loc_frame, text="📂 OPEN & FOCUS EXCEL CELL", height=45, fg_color=COLORS["primary"], hover_color=COLORS["primary_glow"], corner_radius=10,
                                    font=ctk.CTkFont(size=13, weight="bold"), 
                                    command=lambda p=item['full_path'], s=item['sheet'], c=item['cell']: self.open_excel_at_location(p, s, c))
+                btn.pack(fill="x", padx=15, pady=(10, 15))
+                
+            elif data["type"] == "inconsistency_group":
+                item = data["item"]
+                coord = item["coordinate"]
+                
+                group_frame = ctk.CTkFrame(self.preview_details_scroll, fg_color=COLORS["bg_canvas"], corner_radius=12, border_width=1, border_color=COLORS["border"])
+                group_frame.pack(fill="both", expand=True, padx=5, pady=5)
+                
+                ctk.CTkLabel(group_frame, text="FORMULA MISMATCH REPORT", font=ctk.CTkFont(size=11, weight="bold"), text_color=COLORS["text_muted"]).pack(anchor="w", padx=15, pady=(15, 5))
+                ctk.CTkLabel(group_frame, text=f"Coord: {coord}", font=ctk.CTkFont(size=14, weight="bold"), text_color=COLORS["danger"]).pack(anchor="w", padx=15, pady=(0, 12))
+                
+                grid_container = ctk.CTkFrame(group_frame, fg_color=COLORS["border"], corner_radius=8)
+                grid_container.pack(fill="x", padx=15, pady=(0, 15))
+                
+                grid_container.grid_columnconfigure(0, weight=2)
+                grid_container.grid_columnconfigure(1, weight=3)
+                grid_container.grid_columnconfigure(2, weight=1)
+                
+                headers = ["File Name", "Formula / State", "Action"]
+                for col_idx, h_text in enumerate(headers):
+                    h_cell = ctk.CTkFrame(grid_container, fg_color="#F1F5F9", corner_radius=0)
+                    h_cell.grid(row=0, column=col_idx, sticky="nsew", padx=1, pady=1)
+                    ctk.CTkLabel(h_cell, text=h_text, font=ctk.CTkFont(size=10, weight="bold"), text_color=COLORS["text_dark"]).pack(padx=5, pady=6)
+                    
+                for row_idx, (f_path, f_detail) in enumerate(item["files"].items()):
+                    r = row_idx + 1
+                    bg_color = "#F8FAFC" if row_idx % 2 == 0 else "#FFFFFF"
+                    
+                    c0_frame = ctk.CTkFrame(grid_container, fg_color=bg_color, corner_radius=0)
+                    c0_frame.grid(row=r, column=0, sticky="nsew", padx=1, pady=1)
+                    ctk.CTkLabel(c0_frame, text=f_detail['file'], font=ctk.CTkFont(size=10), text_color=COLORS["text_dark"], wraplength=120, justify="left").pack(anchor="w", padx=5, pady=6)
+                    
+                    c1_frame = ctk.CTkFrame(grid_container, fg_color=bg_color, corner_radius=0)
+                    c1_frame.grid(row=r, column=1, sticky="nsew", padx=1, pady=1)
+                    
+                    t_color = COLORS["danger"] if f_detail['state'] != 'formula' else COLORS["primary"]
+                    disp_val = f_detail['value']
+                    ctk.CTkLabel(c1_frame, text=disp_val, font=ctk.CTkFont(size=9, weight="bold" if f_detail['state'] != 'missing' else "normal"), text_color=t_color, wraplength=140, justify="left").pack(anchor="w", padx=5, pady=6)
+                    
+                    c2_frame = ctk.CTkFrame(grid_container, fg_color=bg_color, corner_radius=0)
+                    c2_frame.grid(row=r, column=2, sticky="nsew", padx=1, pady=1)
+                    btn = ctk.CTkButton(c2_frame, text="OPEN", width=50, height=22, fg_color=COLORS["secondary"], hover_color=COLORS["primary"], corner_radius=4,
+                                       font=ctk.CTkFont(size=9, weight="bold"), command=lambda p=f_detail['full_path'], s=item['sheet'], c=item['cell']: self.open_excel_at_location(p, s, c))
+                    btn.pack(padx=5, pady=4)
+                    
+            elif data["type"] == "inconsistency_cell":
+                f_detail = data["file_detail"]
+                coord_info = data["coord_info"]
+                
+                loc_frame = ctk.CTkFrame(self.preview_details_scroll, fg_color=COLORS["bg_canvas"], corner_radius=12, border_width=1, border_color=COLORS["border"])
+                loc_frame.pack(fill="both", expand=True, padx=5, pady=5)
+                
+                ctk.CTkLabel(loc_frame, text="INCONSISTENCY DETAILS", font=ctk.CTkFont(size=11, weight="bold"), text_color=COLORS["text_muted"]).pack(anchor="w", padx=15, pady=(15, 10))
+                
+                f_box = ctk.CTkFrame(loc_frame, fg_color="transparent")
+                f_box.pack(fill="x", padx=15, pady=4)
+                ctk.CTkLabel(f_box, text="File Name:", font=ctk.CTkFont(size=12, weight="bold"), text_color=COLORS["text_dark"], width=90, anchor="w").pack(side="left")
+                ctk.CTkLabel(f_box, text=f_detail['file'], font=ctk.CTkFont(size=12), text_color=COLORS["text_dark"], anchor="w", wraplength=200, justify="left").pack(side="left", fill="x", expand=True)
+                
+                s_box = ctk.CTkFrame(loc_frame, fg_color="transparent")
+                s_box.pack(fill="x", padx=15, pady=4)
+                ctk.CTkLabel(s_box, text="Sheet Name:", font=ctk.CTkFont(size=12, weight="bold"), text_color=COLORS["text_dark"], width=90, anchor="w").pack(side="left")
+                ctk.CTkLabel(s_box, text=coord_info['sheet'], font=ctk.CTkFont(size=12), text_color=COLORS["primary"], anchor="w").pack(side="left")
+                
+                c_box = ctk.CTkFrame(loc_frame, fg_color="transparent")
+                c_box.pack(fill="x", padx=15, pady=4)
+                ctk.CTkLabel(c_box, text="Cell Address:", font=ctk.CTkFont(size=12, weight="bold"), text_color=COLORS["text_dark"], width=90, anchor="w").pack(side="left")
+                ctk.CTkLabel(c_box, text=coord_info['cell'], font=ctk.CTkFont(size=12, weight="bold"), text_color=COLORS["danger"], anchor="w").pack(side="left")
+                
+                v_box = ctk.CTkFrame(loc_frame, fg_color="transparent")
+                v_box.pack(fill="x", padx=15, pady=4)
+                ctk.CTkLabel(v_box, text="Cell Content:", font=ctk.CTkFont(size=12, weight="bold"), text_color=COLORS["text_dark"], width=90, anchor="w").pack(side="left")
+                
+                disp_val = f_detail['value']
+                t_color = COLORS["danger"] if f_detail['state'] != 'formula' else COLORS["primary"]
+                ctk.CTkLabel(v_box, text=disp_val, font=ctk.CTkFont(size=12, weight="bold"), text_color=t_color, anchor="w", wraplength=200, justify="left").pack(side="left", fill="x", expand=True)
+                
+                state_box = ctk.CTkFrame(loc_frame, fg_color="transparent")
+                state_box.pack(fill="x", padx=15, pady=4)
+                ctk.CTkLabel(state_box, text="Cell State:", font=ctk.CTkFont(size=12, weight="bold"), text_color=COLORS["text_dark"], width=90, anchor="w").pack(side="left")
+                ctk.CTkLabel(state_box, text=f_detail['state'].upper(), font=ctk.CTkFont(size=12, weight="bold"), text_color=t_color, anchor="w").pack(side="left")
+                
+                desc_box = ctk.CTkFrame(loc_frame, fg_color="transparent")
+                desc_box.pack(fill="x", padx=15, pady=10)
+                ctk.CTkLabel(desc_box, text="Explanation: The content of this cell differs from other audited files at the same coordinate. To ensure compliance, every file must share the exact same formula expressions.", font=ctk.CTkFont(size=10, slant="italic"), text_color=COLORS["text_muted"], wraplength=270, justify="left").pack(anchor="w")
+                
+                btn = ctk.CTkButton(loc_frame, text="📂 OPEN & FOCUS EXCEL CELL", height=45, fg_color=COLORS["primary"], hover_color=COLORS["primary_glow"], corner_radius=10,
+                                   font=ctk.CTkFont(size=13, weight="bold"), 
+                                   command=lambda p=f_detail['full_path'], s=coord_info['sheet'], c=coord_info['cell']: self.open_excel_at_location(p, s, c))
                 btn.pack(fill="x", padx=15, pady=(10, 15))
 
     def open_excel_at_location(self, file_path, sheet_name, cell_address):
@@ -1045,27 +1261,62 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
                         worksheet.write(current_row, 4, loc['cell'], cell_fmt)
                         current_row += 1
             else:
-                worksheet = workbook.add_worksheet("Formula Audit Results")
+                hardcoded_violations = self.duplicates_cache.get("hardcoded", [])
+                inconsistencies = self.duplicates_cache.get("inconsistencies", [])
+                
                 header_fmt = workbook.add_format({'bold': True, 'bg_color': '#0F172A', 'font_color': 'white', 'border': 1, 'align': 'center'})
                 cell_fmt = workbook.add_format({'border': 1, 'align': 'center', 'valign': 'vcenter'})
                 fail_fmt = workbook.add_format({'bold': True, 'bg_color': '#FEE2E2', 'font_color': '#991B1B', 'border': 1, 'align': 'center'})
                 pass_fmt = workbook.add_format({'bold': True, 'bg_color': '#D1FAE5', 'font_color': '#065F46', 'border': 1, 'align': 'center'})
-
-                headers = ["FILE NAME", "SHEET NAME", "CELL ADDRESS", "HARDCODED VALUE", "ISSUE TYPE"]
-                for col, text in enumerate(headers):
-                    worksheet.write(0, col, text, header_fmt)
+                mismatch_fmt = workbook.add_format({'bg_color': '#FEF3C7', 'font_color': '#D97706', 'border': 1, 'align': 'center'})
                 
-                worksheet.set_column('A:E', 25)
-
-                current_row = 1
-                for item in self.duplicates_cache:
-                    val_fmt = pass_fmt if item['value'].strip().upper() == "PASS" else fail_fmt
-                    worksheet.write(current_row, 0, item['file'], cell_fmt)
-                    worksheet.write(current_row, 1, item['sheet'], cell_fmt)
-                    worksheet.write(current_row, 2, item['cell'], cell_fmt)
-                    worksheet.write(current_row, 3, item['value'], val_fmt)
-                    worksheet.write(current_row, 4, item['type'], cell_fmt)
-                    current_row += 1
+                # 1. Sheet ô trị tĩnh Pass/Fail
+                if hardcoded_violations or not inconsistencies:
+                    ws_hc = workbook.add_worksheet("Hardcoded Pass-Fail")
+                    headers_hc = ["FILE NAME", "SHEET NAME", "CELL ADDRESS", "HARDCODED VALUE", "ISSUE TYPE"]
+                    for col, text in enumerate(headers_hc):
+                        ws_hc.write(0, col, text, header_fmt)
+                    ws_hc.set_column('A:E', 25)
+                    
+                    row_hc = 1
+                    for item in hardcoded_violations:
+                        val_fmt = pass_fmt if item['value'].strip().upper() == "PASS" else fail_fmt
+                        ws_hc.write(row_hc, 0, item['file'], cell_fmt)
+                        ws_hc.write(row_hc, 1, item['sheet'], cell_fmt)
+                        ws_hc.write(row_hc, 2, item['cell'], cell_fmt)
+                        ws_hc.write(row_hc, 3, item['value'], val_fmt)
+                        ws_hc.write(row_hc, 4, item['type'], cell_fmt)
+                        row_hc += 1
+                        
+                # 2. Sheet không đồng nhất công thức chéo
+                if inconsistencies:
+                    ws_inc = workbook.add_worksheet("Formula Inconsistencies")
+                    headers_inc = ["COORDINATE", "SHEET NAME", "CELL ADDRESS"]
+                    file_columns = [Path(f).name for f in self.selected_files]
+                    headers_inc.extend(file_columns)
+                    
+                    for col, text in enumerate(headers_inc):
+                        ws_inc.write(0, col, text, header_fmt)
+                    ws_inc.set_column(0, len(headers_inc) - 1, 25)
+                    
+                    row_inc = 1
+                    for inc in inconsistencies:
+                        ws_inc.write(row_inc, 0, inc['coordinate'], cell_fmt)
+                        ws_inc.write(row_inc, 1, inc['sheet'], cell_fmt)
+                        ws_inc.write(row_inc, 2, inc['cell'], cell_fmt)
+                        
+                        for col_idx, f_path in enumerate(self.selected_files):
+                            f_path_str = str(f_path)
+                            f_detail = inc['files'].get(f_path_str, {"state": "missing", "value": "(No formula / Empty)"})
+                            
+                            f_fmt = cell_fmt
+                            if f_detail['state'] == 'hardcoded':
+                                f_fmt = fail_fmt
+                            elif f_detail['state'] == 'missing':
+                                f_fmt = mismatch_fmt
+                                
+                            ws_inc.write(row_inc, 3 + col_idx, f_detail['value'], f_fmt)
+                        row_inc += 1
 
             workbook.close()
             messagebox.showinfo("Success", f"Report exported successfully to:\n{file_path}")
