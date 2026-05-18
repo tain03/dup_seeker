@@ -1462,32 +1462,95 @@ class DuplicateApp(ctk.CTk, TkinterDnD.DnDWrapper):
 
     def show_guide(self):
         guide_win = ctk.CTkToplevel(self)
-        guide_win.title("DUP-SEEKER USER GUIDE")
-        guide_win.geometry("600x550")
+        guide_win.title("DUP-SEEKER - HƯỚNG DẪN SỬ DỤNG CHI TIẾT")
+        guide_win.geometry("720x680")
         guide_win.configure(fg_color=COLORS["white"])
         guide_win.after(100, lambda: guide_win.focus())
         
         scroll = ctk.CTkScrollableFrame(guide_win, fg_color="transparent")
-        scroll.pack(fill="both", expand=True, padx=20, pady=20)
+        scroll.pack(fill="both", expand=True, padx=25, pady=20)
 
-        ctk.CTkLabel(scroll, text="🇻🇳 HƯỚNG DẪN SỬ DỤNG", font=ctk.CTkFont(size=18, weight="bold"), text_color=COLORS["primary"]).pack(anchor="w", pady=(0,10))
-        vn_text = (
-            "1. CHỌN CHẾ ĐỘ QUÉT: Tại 'AUDIT MODE', nhấp chọn 'IMAGE AUDIT' để tìm ảnh trùng lặp hoặc 'FORMULA AUDIT' để phát hiện các ô nhập Pass/Fail thủ công.\n\n"
-            "2. CHỌN DỮ LIỆU: Nhấn 'SELECT DATA SOURCE' hoặc kéo thả các file Excel (.xlsx) trực tiếp vào ứng dụng.\n\n"
-            "3. THỰC HIỆN: Nhấn 'EXECUTE AUDIT' để ứng dụng tiến hành phân tích siêu tốc.\n\n"
-            "4. ĐỊNH VỊ SÂU: Nhấp chuột vào dòng chi tiết, bảng điều khiển bên phải sẽ cung cấp thông tin và nút 'OPEN'/'OPEN EXCEL FILE' để tự động mở tệp Excel và bôi đen tiêu điểm vào đúng ô tọa độ!"
+        # VIETNAMESE SECTION
+        ctk.CTkLabel(scroll, text="🇻🇳 HƯỚNG DẪN SỬ DỤNG CHI TIẾT", font=ctk.CTkFont(size=20, weight="bold"), text_color=COLORS["primary"]).pack(anchor="w", pady=(0,15))
+        
+        vn_intro = (
+            "Chào mừng bạn đến với DUP-SEEKER v2.4 - Bộ công cụ kiểm tra tính toàn vẹn hình ảnh và công thức Excel chuyên nghiệp dành cho doanh nghiệp.\n"
         )
-        ctk.CTkLabel(scroll, text=vn_text, font=ctk.CTkFont(size=13), justify="left", wraplength=520, text_color=COLORS["text_dark"]).pack(anchor="w", pady=(0,30))
+        ctk.CTkLabel(scroll, text=vn_intro, font=ctk.CTkFont(size=13, weight="bold"), justify="left", wraplength=640, text_color=COLORS["text_dark"]).pack(anchor="w", pady=(0,15))
 
-        ctk.CTkLabel(scroll, text="🇺🇸 USER GUIDE", font=ctk.CTkFont(size=18, weight="bold"), text_color=COLORS["secondary"]).pack(anchor="w", pady=(0,10))
-        en_text = (
-            "1. SELECT AUDIT MODE: At 'AUDIT MODE', choose 'IMAGE AUDIT' to detect duplicate images or 'FORMULA AUDIT' to discover manual Pass/Fail cells.\n\n"
-            "2. SELECT DATA: Click 'SELECT DATA SOURCE' or drag and drop Excel files (.xlsx) into the app.\n\n"
-            "3. EXECUTE: Click 'EXECUTE AUDIT' to trigger the fast audit processor.\n\n"
-            "4. DEEP FOCUS: Click any result item, and the right panel will show details along with 'OPEN'/'OPEN EXCEL FILE' buttons to automatically launch Excel and focus exact coordinates!"
+        vn_modes_title = "⚙️ 1. PHƯƠNG THỨC KIỂM TRA (AUDIT MODE)"
+        ctk.CTkLabel(scroll, text=vn_modes_title, font=ctk.CTkFont(size=14, weight="bold"), text_color=COLORS["secondary"]).pack(anchor="w", pady=(5,5))
+        vn_modes_text = (
+            "• IMAGE AUDIT (Quét Ảnh Trùng): Tự động trích xuất và so sánh dữ liệu ảnh trong các file Excel bằng công nghệ băm kép siêu tốc (MD5 + AI Vision pHash). Khi nhấn nút 'OPEN' ở ô trùng, Excel sẽ tự động mở tệp, chọn trực tiếp hình ảnh (Shape/Picture) và cuộn màn hình lấy nét chuẩn xác.\n"
+            "• FORMULA AUDIT (Quét Công Thức): Kiểm tra tính toàn vẹn của các ô kết quả (Pass/Fail) tại các tệp Excel:\n"
+            "   - Phát hiện các ô nhập thủ công (Hardcoded) đè mất công thức gốc.\n"
+            "   - Phát hiện sai khác công thức giữa các tệp Excel tại cùng một sheet và tọa độ ô.\n"
+            "   - Phát hiện các ô bỏ trống (mất công thức)."
         )
-        ctk.CTkLabel(scroll, text=en_text, font=ctk.CTkFont(size=13), justify="left", wraplength=520, text_color=COLORS["text_dark"]).pack(anchor="w")
-        ctk.CTkButton(guide_win, text="CLOSE / ĐÓNG", command=guide_win.destroy, fg_color=COLORS["sidebar_primary"], corner_radius=10).pack(pady=20)
+        ctk.CTkLabel(scroll, text=vn_modes_text, font=ctk.CTkFont(size=13), justify="left", wraplength=640, text_color=COLORS["text_dark"]).pack(anchor="w", pady=(0,15))
+
+        vn_protect_title = "🛡️ 2. BẢO VỆ CÔNG THỨC MỘT CHẠM (PROTECT FORMULAS)"
+        ctk.CTkLabel(scroll, text=vn_protect_title, font=ctk.CTkFont(size=14, weight="bold"), text_color=COLORS["secondary"]).pack(anchor="w", pady=(5,5))
+        vn_protect_text = (
+            "Tính năng giúp phòng tránh hoàn toàn lỗi người dùng nhập nhầm đè mất công thức:\n"
+            "• Tự động quét và khóa cứng toàn bộ ô chứa công thức bằng công nghệ SpecialCells cấp độ C++ cực nhanh.\n"
+            "• Mở khóa toàn bộ các ô nhập dữ liệu thủ công để người dùng làm việc bình thường.\n"
+            "• Kích hoạt bảo vệ Sheet bằng mật khẩu là '1'.\n"
+            "• Vẫn cho phép người dùng tự do chỉnh sửa, kéo thả hình ảnh/ảnh vẽ (Drawing Objects) và thay đổi định dạng ô/dòng/cột (tô màu, viền, font chữ) trên ô công thức để báo cáo đẹp mắt."
+        )
+        ctk.CTkLabel(scroll, text=vn_protect_text, font=ctk.CTkFont(size=13), justify="left", wraplength=640, text_color=COLORS["text_dark"]).pack(anchor="w", pady=(0,15))
+
+        vn_step_title = "📋 3. QUY TRÌNH THỰC HIỆN 4 BƯỚC"
+        ctk.CTkLabel(scroll, text=vn_step_title, font=ctk.CTkFont(size=14, weight="bold"), text_color=COLORS["secondary"]).pack(anchor="w", pady=(5,5))
+        vn_step_text = (
+            "1. Chọn chế độ kiểm tra thích hợp ở vùng 'AUDIT MODE' trên thanh Sidebar.\n"
+            "2. Nhấn 'SELECT DATA SOURCE' hoặc kéo thả các tệp Excel (.xlsx) trực tiếp vào khung nét đứt giữa màn hình.\n"
+            "3. Nhấn 'EXECUTE AUDIT' để tiến hành phân tích, hoặc chọn '🛡️ PROTECT FORMULAS' để tự động khóa bảo mật công thức các tệp đã chọn.\n"
+            "4. Kiểm tra kết quả trực quan trên bảng lưới và nhấp nút 'EXPORT REPORT' để xuất file Excel tổng hợp chuyên nghiệp gửi cho đối tác."
+        )
+        ctk.CTkLabel(scroll, text=vn_step_text, font=ctk.CTkFont(size=13), justify="left", wraplength=640, text_color=COLORS["text_dark"]).pack(anchor="w", pady=(0,35))
+
+        # ENGLISH SECTION
+        ctk.CTkLabel(scroll, text="🇺🇸 DETAILED USER GUIDE", font=ctk.CTkFont(size=20, weight="bold"), text_color=COLORS["primary"]).pack(anchor="w", pady=(0,15))
+        
+        en_intro = (
+            "Welcome to DUP-SEEKER v2.4 - The Enterprise-Grade Image Integrity & Formula Protection Suite for Microsoft Excel.\n"
+        )
+        ctk.CTkLabel(scroll, text=en_intro, font=ctk.CTkFont(size=13, weight="bold"), justify="left", wraplength=640, text_color=COLORS["text_dark"]).pack(anchor="w", pady=(0,15))
+
+        en_modes_title = "⚙️ 1. AUDIT MODE SELECTION"
+        ctk.CTkLabel(scroll, text=en_modes_title, font=ctk.CTkFont(size=14, weight="bold"), text_color=COLORS["secondary"]).pack(anchor="w", pady=(5,5))
+        en_modes_text = (
+            "• IMAGE AUDIT: Automatically extract and compare excel images using a dual-hashing pipeline (MD5 + AI Vision pHash). Clicking 'OPEN' launches Excel, locks onto the exact Picture Shape, and centers it on screen instantly.\n"
+            "• FORMULA AUDIT: Scans and validates Pass/Fail formulas inside worksheets:\n"
+            "   - Detects manual overrides (hardcoded cells) that wiped out formulas.\n"
+            "   - Detects formula syntax mismatch between sheets at identical locations.\n"
+            "   - Identifies empty formula cell targets."
+        )
+        ctk.CTkLabel(scroll, text=en_modes_text, font=ctk.CTkFont(size=13), justify="left", wraplength=640, text_color=COLORS["text_dark"]).pack(anchor="w", pady=(0,15))
+
+        en_protect_title = "🛡️ 2. ONE-TOUCH FORMULA PROTECTION"
+        ctk.CTkLabel(scroll, text=en_protect_title, font=ctk.CTkFont(size=14, weight="bold"), text_color=COLORS["secondary"]).pack(anchor="w", pady=(5,5))
+        en_protect_text = (
+            "Ensure formula safety against user edit mistakes:\n"
+            "• Automatically scans and locks all formula cells using high-speed native C++ SpecialCells.\n"
+            "• Unlocks all other raw data cells for uninterrupted data entry.\n"
+            "• Secures worksheets with a unified password ('1').\n"
+            "• Still allows users to draw, move, resize shapes (Drawing Objects) and customize cell formatting (fill, border, font) inside formula-locked areas."
+        )
+        ctk.CTkLabel(scroll, text=en_protect_text, font=ctk.CTkFont(size=13), justify="left", wraplength=640, text_color=COLORS["text_dark"]).pack(anchor="w", pady=(0,15))
+
+        en_step_title = "📋 3. THE 4-STEP WORKFLOW"
+        ctk.CTkLabel(scroll, text=en_step_title, font=ctk.CTkFont(size=14, weight="bold"), text_color=COLORS["secondary"]).pack(anchor="w", pady=(5,5))
+        en_step_text = (
+            "1. Select the desired Audit Mode from the Sidebar panel.\n"
+            "2. Click 'SELECT DATA SOURCE' or drag and drop Excel files (.xlsx) into the dashed dropzone.\n"
+            "3. Click 'EXECUTE AUDIT' to run fast analytics, or click '🛡️ PROTECT FORMULAS' to lock worksheets.\n"
+            "4. Review findings on the reactive grid and click 'EXPORT REPORT' to output a clean Excel summary."
+        )
+        ctk.CTkLabel(scroll, text=en_step_text, font=ctk.CTkFont(size=13), justify="left", wraplength=640, text_color=COLORS["text_dark"]).pack(anchor="w", pady=(0,20))
+
+        ctk.CTkButton(guide_win, text="CLOSE / ĐÓNG HƯỚNG DẪN", command=guide_win.destroy, fg_color=COLORS["sidebar_primary"], corner_radius=10, height=35).pack(pady=15)
 
     def protect_selected_files(self):
         if not self.selected_files:
