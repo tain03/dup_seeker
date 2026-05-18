@@ -19,6 +19,7 @@ from tkinterdnd2 import DND_FILES, TkinterDnD
 import imagehash
 import xlsxwriter
 import sqlite3
+import re
 
 # --- THIẾT LẬP ID TIẾN TRÌNH CHO WINDOWS TASKBAR ICON ---
 try:
@@ -189,6 +190,54 @@ class ExcelProcessor:
             return md5_val, None
 
     @staticmethod
+    def col_to_num(col_str):
+        num = 0
+        for char in col_str:
+            num = num * 26 + (ord(char) - ord('A') + 1)
+        return num
+
+    @staticmethod
+    def num_to_col(num):
+        col_str = ""
+        while num > 0:
+            num, remainder = divmod(num - 1, 26)
+            col_str = chr(remainder + ord('A')) + col_str
+        return col_str
+
+    @staticmethod
+    def cell_to_coord(cell_addr):
+        match = re.match(r'^([A-Z]+)([0-9]+)$', cell_addr)
+        if match:
+            col_str, row_str = match.groups()
+            return int(row_str), ExcelProcessor.col_to_num(col_str)
+        return None
+
+    @staticmethod
+    def translate_formula(formula, row_offset, col_offset):
+        if not formula:
+            return ""
+        
+        def replace_match(match):
+            col_abs, col_letter, row_abs, row_num_str = match.groups()
+            
+            if not row_abs:
+                new_row = int(row_num_str) + row_offset
+                row_str = str(max(1, new_row))
+            else:
+                row_str = row_num_str
+                
+            if not col_abs:
+                new_col = ExcelProcessor.col_to_num(col_letter) + col_offset
+                col_str = ExcelProcessor.num_to_col(max(1, new_col))
+            else:
+                col_str = col_letter
+                
+            return f"{col_abs}{col_str}{row_abs}{row_str}"
+        
+        pattern = r'(\$?)([A-Z]{1,3})(\$?)([0-9]+)\b(?!\s*\()'
+        return re.sub(pattern, replace_match, formula)
+
+    @staticmethod
     def extract_formula_integrity(file_path, ignore_sheets=None):
         """Quét các ô trong tệp Excel để tìm ô chứa giá trị cứng Pass/Fail và ghi lại các công thức"""
         ignore_sheets = ignore_sheets or []
@@ -237,6 +286,8 @@ class ExcelProcessor:
                     sheet_xml = z.read(sheet_path)
                     s_root = ET.fromstring(sheet_xml)
                     
+                    shared_formulas = {} # Lưu công thức mẫu theo si trong từng sheet
+                    
                     for c_tag in s_root.findall('.//sh:c', NS):
                         cell_addr = c_tag.get('r')
                         cell_type = c_tag.get('t')
@@ -244,7 +295,26 @@ class ExcelProcessor:
                         f_tag = c_tag.find('sh:f', NS)
                         has_formula = f_tag is not None
                         if has_formula:
+                            f_type = f_tag.get('t')
+                            f_si = f_tag.get('si')
                             formula_text = f_tag.text or ""
+                            
+                            if f_type == 'shared' and f_si is not None:
+                                if formula_text:
+                                    shared_formulas[f_si] = (cell_addr, formula_text)
+                                else:
+                                    master_info = shared_formulas.get(f_si)
+                                    if master_info:
+                                        master_cell, master_formula = master_info
+                                        m_coord = ExcelProcessor.cell_to_coord(master_cell)
+                                        c_coord = ExcelProcessor.cell_to_coord(cell_addr)
+                                        if m_coord and c_coord:
+                                            row_off = c_coord[0] - m_coord[0]
+                                            col_off = c_coord[1] - m_coord[1]
+                                            formula_text = ExcelProcessor.translate_formula(master_formula, row_off, col_off)
+                                        else:
+                                            formula_text = master_formula
+                            
                             # Chuẩn hóa công thức có dấu bằng ở đầu
                             if formula_text and not formula_text.startswith("="):
                                 formula_text = f"={formula_text}"
@@ -282,7 +352,7 @@ class ExcelProcessor:
                                 "type": "Hardcoded " + val.capitalize()
                             })
         except Exception as e:
-            print(f"Lỗi khi quét công thức tệp {Path(file_path).name}: {e}")
+            print(f"Error scanning formula in file {Path(file_path).name}: {e}")
         return {"violations": results, "formulas": formulas}
 
 
